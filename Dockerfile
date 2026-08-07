@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      clang-18 llvm-18 \
+      clang-18 llvm-18 libclang-rt-18-dev \
       python3 python3-venv \
       git ca-certificates \
       make \
