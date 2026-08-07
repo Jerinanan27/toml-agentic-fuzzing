@@ -1,0 +1,24 @@
+# Secrets — never commit
+.env
+*.key
+*.pem
+
+# Compiled output
+harness
+*.o
+*.so
+*.a
+
+# The target library: cloned at a pinned SHA by the build script,
+# never vendored into this repo
+tomlc99/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Hypothesis's local example cache — machine-specific and large.
+# Reproducibility comes from recorded seeds, not from this directory.
+.hypothesis/
