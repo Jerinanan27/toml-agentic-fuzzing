@@ -22,3 +22,4 @@ venv/
 # Hypothesis's local example cache — machine-specific and large.
 # Reproducibility comes from recorded seeds, not from this directory.
 .hypothesis/
+scratch/
