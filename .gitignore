@@ -4,7 +4,8 @@
 *.pem
 
 # Compiled output
-harness
+harness/harness
+harness/harness_asan
 *.o
 *.so
 *.a
