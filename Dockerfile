@@ -14,6 +14,8 @@ ENV ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
 
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /work
 CMD ["/bin/bash"]
