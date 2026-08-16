@@ -1,0 +1,39 @@
+Write a Hypothesis strategy that generates TOML values.
+
+CONTRACT - your strategy must produce ONLY these Python types:
+  int    -> becomes a TOML integer
+  float  -> becomes a TOML float
+  bool   -> becomes true/false
+  str    -> becomes a quoted string
+  list   -> becomes a TOML array
+  dict   -> becomes a TOML inline table (keys must be simple
+            lowercase identifiers, values follow the same rules)
+
+Do NOT produce tuples, None, sets, or any other type.
+Dict keys must be plain strings like "a", "key1", "name" - never
+numbers, never containing spaces or dots.
+
+REQUIREMENTS:
+- Use st.recursive so arrays and inline tables can nest inside
+  each other and inside themselves.
+- DEPTH IS THE PRIORITY. Set max_leaves to at least 5000, and keep
+  containers narrow (max_size around 2) so the structure grows
+  DEEP rather than WIDE. A ladder, not a bush.
+- Cover these edge cases explicitly:
+    empty lists and empty inline tables
+    very large and very small integers
+    floats including 0.0 and negatives
+    strings containing quotes, backslashes and unicode
+    booleans
+- st.recursive alone will NOT produce deep structures - Hypothesis
+  biases toward small examples. So ALSO include an explicit deep-nesting
+  generator: draw a depth D from a wide range (e.g. 50 to 5000) and
+  wrap a base value in D layers of arrays or inline tables.
+- The final `strategy` must be a mix: mostly varied shallow values
+  from st.recursive, plus a meaningful share of these explicitly
+  deep structures.
+  
+OUTPUT FORMAT:
+Return ONLY Python code. No explanation, no markdown fences.
+The code must define a variable named `strategy`.
+Assume `from hypothesis import strategies as st` is already available.

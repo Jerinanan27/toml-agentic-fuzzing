@@ -1,25 +1,65 @@
+import sys
+
+# Deep structures are the point of this project, so allow deep recursion
+# in serialize(). depth() and node_types() are iterative and unaffected.
+sys.setrecursionlimit(100000)
+
 def depth(node) -> int:
     """How many layers deep is this structure?
 
-    A plain value (number, string) has depth 0.
-    A list has depth 1 + the depth of its deepest child.
+    Iterative, not recursive - deep structures would otherwise
+    overflow Python's own stack (which is the same bug class we
+    are hunting in the C parser).
     """
-    if isinstance(node, list):
-        if not node:
-            return 1
-        return 1 + max(depth(child) for child in node)
-    return 0
+    max_d = 0
+    stack = [(node, 0)]
+    while stack:
+        current, d = stack.pop()
+        if isinstance(current, dict):
+            max_d = max(max_d, d + 1)
+            for v in current.values():
+                stack.append((v, d + 1))
+        elif isinstance(current, list):
+            max_d = max(max_d, d + 1)
+            for child in current:
+                stack.append((child, d + 1))
+        else:
+            max_d = max(max_d, d)
+    return max_d
+
 
 def serialize(node) -> str:
-    """Turn a structure into TOML text."""
-    if isinstance(node, list):
-        inner = ", ".join(serialize(child) for child in node)
-        return "[" + inner + "]"
-    if isinstance(node, bool):
-        return "true" if node else "false"
-    if isinstance(node, str):
-        return '"' + node + '"'
-    return str(node)
+    """Turn a structure into TOML text. Iterative, to survive deep nesting."""
+    out = []
+    stack = [("value", node)]
+    while stack:
+        kind, item = stack.pop()
+        if kind == "raw":
+            out.append(item)
+            continue
+        if isinstance(item, dict):
+            stack.append(("raw", " }"))
+            items = list(item.items())
+            for i, (k, v) in enumerate(reversed(items)):
+                stack.append(("value", v))
+                stack.append(("raw", f"{k} = "))
+                if i < len(items) - 1:
+                    stack.append(("raw", ", "))
+            stack.append(("raw", "{ "))
+        elif isinstance(item, list):
+            stack.append(("raw", "]"))
+            for i, child in enumerate(reversed(item)):
+                stack.append(("value", child))
+                if i < len(item) - 1:
+                    stack.append(("raw", ", "))
+            stack.append(("raw", "["))
+        elif isinstance(item, bool):
+            out.append("true" if item else "false")
+        elif isinstance(item, str):
+            out.append('"' + item + '"')
+        else:
+            out.append(str(item))
+    return "".join(out)
 
 
 def to_toml(node) -> str:
@@ -27,21 +67,28 @@ def to_toml(node) -> str:
     return "a = " + serialize(node)
 
 def node_types(node) -> set:
-    """What types of nodes appear in this structure?"""
-    if isinstance(node, list):
-        types = {"array"}
-        for child in node:
-            types |= node_types(child)
-        return types
-    if isinstance(node, bool):
-        return {"bool"}
-    if isinstance(node, str):
-        return {"string"}
-    if isinstance(node, int):
-        return {"integer"}
-    if isinstance(node, float):
-        return {"float"}
-    return {"unknown"}
+    """What types of nodes appear? Iterative, for the same reason as depth()."""
+    found = set()
+    stack = [node]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            found.add("inline_table")
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            found.add("array")
+            stack.extend(current)
+        elif isinstance(current, bool):
+            found.add("bool")
+        elif isinstance(current, str):
+            found.add("string")
+        elif isinstance(current, int):
+            found.add("integer")
+        elif isinstance(current, float):
+            found.add("float")
+        else:
+            found.add("unknown")
+    return found
 
 def summarise(structures: list) -> dict:
     """Summarise a batch of structures."""
