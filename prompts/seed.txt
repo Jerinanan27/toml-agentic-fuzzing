@@ -16,19 +16,19 @@ numbers, never containing spaces or dots.
 REQUIREMENTS:
 - Use st.recursive so arrays and inline tables can nest inside
   each other and inside themselves.
-- DEPTH IS THE PRIORITY. Set max_leaves to at least 5000, and keep
-  containers narrow (max_size around 2) so the structure grows
-  DEEP rather than WIDE. A ladder, not a bush.
+- To reach very deep nesting, do NOT use st.lists with a large min_size -
+  Hypothesis refuses to build lists that big. Instead:
+    draw a plain integer D from st.integers(min_value=100, max_value=200000)
+    then use .map() with a normal Python for-loop that wraps a base value
+    in D layers of [ ] or { "k": ... }
+  Hypothesis chooses the number; a plain loop does the wrapping.
+- Target: some inputs must reach 100000+ levels of nesting.
 - Cover these edge cases explicitly:
     empty lists and empty inline tables
     very large and very small integers
     floats including 0.0 and negatives
     strings containing quotes, backslashes and unicode
     booleans
-- st.recursive alone will NOT produce deep structures - Hypothesis
-  biases toward small examples. So ALSO include an explicit deep-nesting
-  generator: draw a depth D from a wide range (e.g. 50 to 5000) and
-  wrap a base value in D layers of arrays or inline tables.
 - The final `strategy` must be a mix: mostly varied shallow values
   from st.recursive, plus a meaningful share of these explicitly
   deep structures.
@@ -37,3 +37,5 @@ OUTPUT FORMAT:
 Return ONLY Python code. No explanation, no markdown fences.
 The code must define a variable named `strategy`.
 Assume `from hypothesis import strategies as st` is already available.
+Use correct Hypothesis argument names. st.lists and st.dictionaries take
+min_size and max_size, NOT min_value and max_value.
