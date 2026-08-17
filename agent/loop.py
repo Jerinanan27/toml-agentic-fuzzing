@@ -8,9 +8,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agent.runner import run_round, format_feedback
 from agent.refine import ask_for_improvement, load_strategy, validate_strategy
 
-STRATEGY_DIR = "strategies/generated"
-LOG_DIR = "logs/iterations"
-CRASH_DIR = "crashes"
+STRATEGY_DIR = "strategies/generated_exp2"
+LOG_DIR = "logs/iterations_exp2"
+CRASH_DIR = "crashes_exp2"
 
 MAX_ITERATIONS = 5
 EXAMPLES_PER_ROUND = 500
