@@ -5,7 +5,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from llm import call_llm
 
-IMPORT_LINE = "from hypothesis import strategies as st\n"
+IMPORT_LINE = (
+    "from hypothesis import strategies as st\n"
+    "from metrics import DottedKey\n"
+)
 
 
 def strip_fences(text: str) -> str:

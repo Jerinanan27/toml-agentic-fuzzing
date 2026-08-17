@@ -4,6 +4,13 @@ import sys
 # in serialize(). depth() and node_types() are iterative and unaffected.
 sys.setrecursionlimit(100000)
 
+class DottedKey:
+    """Represents a dotted key like a.b.c.d = value.
+    depth = number of key segments; value = the assigned value."""
+    def __init__(self, depth, value):
+        self.depth = depth
+        self.value = value
+
 def depth(node) -> int:
     """How many layers deep is this structure?
 
@@ -15,7 +22,10 @@ def depth(node) -> int:
     stack = [(node, 0)]
     while stack:
         current, d = stack.pop()
-        if isinstance(current, dict):
+        if isinstance(current, DottedKey):
+            max_d = max(max_d, d + current.depth)
+            stack.append((current.value, d + current.depth))
+        elif isinstance(current, dict):
             max_d = max(max_d, d + 1)
             for v in current.values():
                 stack.append((v, d + 1))
@@ -36,6 +46,11 @@ def serialize(node) -> str:
         kind, item = stack.pop()
         if kind == "raw":
             out.append(item)
+            continue
+        if isinstance(item, DottedKey):
+            key = ".".join("a" for _ in range(item.depth))
+            stack.append(("value", item.value))
+            stack.append(("raw", key + " = "))
             continue
         if isinstance(item, dict):
             stack.append(("raw", " }"))
@@ -63,7 +78,8 @@ def serialize(node) -> str:
 
 
 def to_toml(node) -> str:
-    """Wrap a value into a complete TOML document."""
+    if isinstance(node, DottedKey):
+        return serialize(node)   # already a full statement
     return "a = " + serialize(node)
 
 def node_types(node) -> set:
@@ -72,7 +88,10 @@ def node_types(node) -> set:
     stack = [node]
     while stack:
         current = stack.pop()
-        if isinstance(current, dict):
+        if isinstance(current, DottedKey):
+            found.add("dotted_key")
+            stack.append(current.value)
+        elif isinstance(current, dict):
             found.add("inline_table")
             stack.extend(current.values())
         elif isinstance(current, list):

@@ -8,7 +8,7 @@ CONTRACT - your strategy must produce ONLY these Python types:
   list   -> becomes a TOML array
   dict   -> becomes a TOML inline table (keys must be simple
             lowercase identifiers, values follow the same rules)
-
+  DottedKey(depth, value) -> becomes a dotted key like a.b.c = value
 Do NOT produce tuples, None, sets, or any other type.
 Dict keys must be plain strings like "a", "key1", "name" - never
 numbers, never containing spaces or dots.
@@ -32,7 +32,14 @@ REQUIREMENTS:
 - The final `strategy` must be a mix: mostly varied shallow values
   from st.recursive, plus a meaningful share of these explicitly
   deep structures.
-  
+
+- ALSO generate deeply nested DOTTED KEYS, a separate crash class.
+  A dotted key looks like a.b.c.d = value. To make one, use the
+  DottedKey helper: DottedKey(D, base_value) where D is the number
+  of key segments. Draw D from st.integers(min_value=100, max_value=200000)
+  and .map() it into a DottedKey. Some inputs must be dotted keys
+  100000+ segments deep.
+
 OUTPUT FORMAT:
 Return ONLY Python code. No explanation, no markdown fences.
 The code must define a variable named `strategy`.
