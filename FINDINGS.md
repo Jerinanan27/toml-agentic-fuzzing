@@ -29,3 +29,17 @@ dotted reproducer:
 
 inline table reproducer:
   python3 -c "print('a = ' + '{ k = '*52000 + '1' + ' }'*52000)"
+
+## Control experiment (500 inputs each, same budget)
+
+| Approach                       | Crashes | Max depth |
+|--------------------------------|---------|-----------|
+| Random baseline                | 0       | 0         |
+| Seed strategy (iteration 0)    | 0       | 3,939     |
+| Evolved strategy (iteration 5) | 55      | 200,000   |
+
+Random generation and the unrefined seed both found zero crashes.
+Only the evolved strategy, driven by the proxy-signal feedback loop,
+reached crash-triggering depth. The improvement is attributable to
+the feedback loop, not to structured generation alone: the seed was
+already structured and still found nothing.
