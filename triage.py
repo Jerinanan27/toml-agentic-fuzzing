@@ -1,43 +1,59 @@
 import json
 import os
 import re
+from collections import Counter
 
-CRASH_DIR = "crashes"
-
-# Match lines like: "in parse_array /work/tomlc99/toml.c:1075"
-FRAME_RE = re.compile(r"in (\w+) /work/tomlc99/toml\.c:(\d+)")
+CRASH_DIRS = ["crashes", "crashes_exp2"]
+FRAME_RE = re.compile(r"in (\w+) /work/tomlc99/toml\.c")
 
 
 def fingerprint(stderr: str) -> tuple:
-    """Reduce a crash's stderr to a stable signature: the SET of
-    tomlc99 functions appearing in the stack. This ignores the exact
-    exhaustion point (which varies) and captures the recursion cycle."""
-    funcs = set()
-    for match in FRAME_RE.finditer(stderr):
-        func = match.group(1)
-        funcs.add(func)
+    """The recursion cycle = functions that repeat in the stack.
+    Functions appearing only once or twice are the exhaustion point
+    (STRNDUP, expand, etc.), which varies run to run and is noise.
+    Keeping only frequently-repeating frames isolates the actual bug."""
+    funcs = FRAME_RE.findall(stderr)
     if not funcs:
         return ("UNSYMBOLICATED",)
-    return tuple(sorted(funcs))
+    counts = Counter(funcs)
+    cycle = {f for f, n in counts.items() if n >= 3}
+    if not cycle:
+        cycle = set(funcs)
+    return tuple(sorted(cycle))
+
+
+def triage(crash_dir: str) -> dict:
+    groups = {}
+    if not os.path.isdir(crash_dir):
+        return groups
+    for fname in sorted(os.listdir(crash_dir)):
+        crash = json.load(open(f"{crash_dir}/{fname}"))
+        fp = fingerprint(crash["stderr"])
+        if fp not in groups:
+            groups[fp] = {
+                "count": 0,
+                "example_input": crash["input"][:45],
+                "example_file": f"{crash_dir}/{fname}",
+                "min_depth": crash["depth"],
+            }
+        groups[fp]["count"] += 1
+        groups[fp]["min_depth"] = min(groups[fp]["min_depth"], crash["depth"])
+    return groups
 
 
 def main():
-    groups = {}
-    for fname in sorted(os.listdir(CRASH_DIR)):
-        crash = json.load(open(f"{CRASH_DIR}/{fname}"))
-        fp = fingerprint(crash["stderr"])
-        if fp not in groups:
-            groups[fp] = {"count": 0, "example": fname, "example_input": crash["input"][:50]}
-        groups[fp]["count"] += 1
-
-    print(f"Total crashes: {sum(g['count'] for g in groups.values())}")
-    print(f"Distinct bugs: {len(groups)}")
-    print()
-    for fp, info in sorted(groups.items(), key=lambda x: -x[1]["count"]):
-        print(f"--- {info['count']} crashes")
-        print(f"    functions: {fp}")
-        print(f"    example input: {info['example_input']}")
-        print()
+    for crash_dir in CRASH_DIRS:
+        groups = triage(crash_dir)
+        if not groups:
+            continue
+        total = sum(g["count"] for g in groups.values())
+        print(f"\n{'='*55}")
+        print(f"{crash_dir}: {total} crashes -> {len(groups)} distinct bugs")
+        print(f"{'='*55}")
+        for fp, info in sorted(groups.items(), key=lambda x: -x[1]["count"]):
+            print(f"\n  {info['count']} crashes | min depth {info['min_depth']}")
+            print(f"  cycle: {fp}")
+            print(f"  input: {info['example_input']}")
 
 
 if __name__ == "__main__":
