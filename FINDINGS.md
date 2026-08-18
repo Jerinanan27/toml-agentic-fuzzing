@@ -5,19 +5,24 @@
 
 | Recursion cycle                                 | Defect class                     | Crash threshold (8 MB stack, clang-18) |
 |-------------------------------------------------|----------------------------------|----------------------------------------|
-| parse_array                                     | Deep arrays [[[...]]]            | 14,851                                 |
-| parse_keyval                                    | Deep dotted keys a.a.a...        | 87,258                                 |
-| parse_inline_table + parse_keyval               | Deep inline tables { k = {...} } | ~52,000                                |
+| parse_array                                     | Deep arrays [[[...]]]            | ~14,850                                |
+| parse_keyval                                    | Deep dotted keys a.a.a...        | ~87,270                                |
+| parse_inline_table + parse_keyval               | Deep inline tables { k = {...} } | ~52,360                                |
 | parse_array + parse_keyval                      | Mixed array/dotted               | (variant)                              |
 | parse_array + parse_inline_table + parse_keyval | Fully mixed nesting              | (variant)                              |
 
-All are unbounded-recursion stack overflows. Thresholds differ because
-each recursion consumes a different stack-frame size per level.
+All are unbounded-recursion stack overflows under an 8 MB stack, clang-18.
+
+*Thresholds are approximate and vary run-to-run by roughly 6-25 levels,
+because the exact point of stack exhaustion depends on runtime memory
+state. They are not fixed constants. Thresholds differ between defect
+classes because each recursion consumes a different stack-frame size
+per level.
 
 ## Crash counts
 
-Experiment 1 (arrays + inline tables): 271 crashes
-Experiment 2 (+ dotted keys): 278 crashes
+Experiment 1 (arrays + inline tables)               : 271 crashes
+Experiment 2 (arrays + inline tables + dotted keys) : 278 crashes
 
 ## Minimized reproducers
 
@@ -43,3 +48,22 @@ Only the evolved strategy, driven by the proxy-signal feedback loop,
 reached crash-triggering depth. The improvement is attributable to
 the feedback loop, not to structured generation alone: the seed was
 already structured and still found nothing.
+
+
+## Cost and efficiency
+
+Total LLM usage across both experiments (12 refinement calls):
+- Input tokens  : 14,806  (x $0.15/M = $0.0022)
+- Output tokens : 18,785  (x $0.60/M = $0.0113)
+- Total         : 33,591 tokens
+- Total cost    : ~$0.013 (about 0.3% of the ~$5 budget)
+
+Model: openai/gpt-oss-120b (Groq), an open-weight model - not a
+frontier model. The task did not require one.
+
+Efficiency: 549 crashes found (~61 tokens/crash) across 5 distinct
+recursion cycles. The dominant workload was the ~6,000 local harness
+executions (500 x 12 rounds), which cost nothing.
+
+The binding constraint was not cost but the free-tier rate limit
+(8,000 tokens/minute), which forced a 65-second wait between rounds.
