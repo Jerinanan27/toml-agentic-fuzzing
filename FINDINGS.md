@@ -67,3 +67,24 @@ executions (500 x 12 rounds), which cost nothing.
 
 The binding constraint was not cost but the free-tier rate limit
 (8,000 tokens/minute), which forced a 65-second wait between rounds.
+
+## Differential test against tomlc17 (the maintained successor)
+
+tomlc99 is obsolete; its README points to tomlc17. I built a second
+harness (harness/harness17.c) for tomlc17's changed API (which takes
+an explicit length - fixing the embedded-NUL limitation of tomlc99)
+and ran all three reproducers against it.
+
+Result: the recursion/stack-overflow was FIXED, but the same deeply-
+nested inputs trigger a DIFFERENT, newly-introduced bug:
+
+- Fault: null-pointer dereference at tomlc17.c:110
+- Root cause: page_create() (tomlc17.c:105) returns NULL when the
+  requested size exceeds its 1GB cap, but a caller dereferences the
+  result without a null check.
+- Impact: denial-of-service on the current, maintained version.
+- All three input classes (array, dotted, inline table) trigger it.
+
+This turns a rediscovery into a novel finding: the fix for the old
+recursion bug introduced a distinct defect reachable by the same
+input class.
