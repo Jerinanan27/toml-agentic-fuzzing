@@ -1,0 +1,52 @@
+{
+  "iteration": 1,
+  "elapsed_seconds": 36.1,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 377,
+      "CRASH": 64,
+      "REJECTED": 59
+    },
+    "acceptance_rate": 0.754,
+    "depth_max": 200000,
+    "depth_avg": 13157.8,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string"
+    ],
+    "n_types": 6,
+    "distinct_errors": 6,
+    "top_errors": [
+      [
+        "reject: line 1: unterminated quote",
+        35
+      ],
+      [
+        "reject: line 1: bad escape char",
+        6
+      ],
+      [
+        "reject: line 1: unterminated triple-d-quote",
+        6
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:977)",
+        6
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:1096)",
+        5
+      ]
+    ]
+  },
+  "n_crashes": 64,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 377, 'CRASH': 64, 'REJECTED': 59}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 6 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 13157.8\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.754\n   TARGET: between 0.3 and 0.7\n   TOO HIGH - every input is valid TOML, so the parser's\n   error-handling code is never tested. Generate some\n   near-valid-but-malformed inputs: unescaped quotes inside\n   strings, missing brackets, duplicate keys, bad numbers.\n\n4. Distinct rejection messages: 6\n   Most common rejections:\n     35x  reject: line 1: unterminated quote\n     6x  reject: line 1: bad escape char\n     6x  reject: line 1: unterminated triple-d-quote\n     6x  reject: internal error (tomlc99/toml.c:977)\n     5x  reject: internal error (tomlc99/toml.c:1096)\n\nCrashes found: 64\n  depth 55728, input length 278648\n  depth 146280, input length 731427\n  depth 95248, input length 476250",
+  "prompt_tokens": 1468,
+  "completion_tokens": 1848,
+  "refine_status": "accepted"
+}

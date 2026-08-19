@@ -1,0 +1,44 @@
+{
+  "iteration": 0,
+  "elapsed_seconds": 7.7,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 493,
+      "REJECTED": 6,
+      "HARNESS_ERROR": 1
+    },
+    "acceptance_rate": 0.986,
+    "depth_max": 4084,
+    "depth_avg": 387.6,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string"
+    ],
+    "n_types": 6,
+    "distinct_errors": 3,
+    "top_errors": [
+      [
+        "reject: line 1: bad escape char",
+        3
+      ],
+      [
+        "reject: line 1: unterminated quote",
+        2
+      ],
+      [
+        "reject: line 1: unterminated triple-d-quote",
+        1
+      ]
+    ]
+  },
+  "n_crashes": 0,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 493, 'REJECTED': 6, 'HARNESS_ERROR': 1}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 6 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 4084, average 387.6\n   TARGET: the parser only crashes past roughly 100000 levels.\n   TOO SHALLOW - max depth 4084 is far below 100000.\n   Some inputs must reach 100000+ levels of nesting.\n\n3. Acceptance rate: 0.986\n   TARGET: between 0.3 and 0.7\n   TOO HIGH - every input is valid TOML, so the parser's\n   error-handling code is never tested. Generate some\n   near-valid-but-malformed inputs: unescaped quotes inside\n   strings, missing brackets, duplicate keys, bad numbers.\n\n4. Distinct rejection messages: 3\n   Most common rejections:\n     3x  reject: line 1: bad escape char\n     2x  reject: line 1: unterminated quote\n     1x  reject: line 1: unterminated triple-d-quote\n\nCrashes found: 0",
+  "prompt_tokens": 1417,
+  "completion_tokens": 1311,
+  "refine_status": "accepted"
+}

@@ -11,6 +11,18 @@
 | parse_array + parse_keyval                      | Mixed array/dotted               | (variant)                              |
 | parse_array + parse_inline_table + parse_keyval | Fully mixed nesting              | (variant)                              |
 
+## Resolving the unsymbolicated crashes
+
+48 crashes (17 in exp1, 31 in exp2) produced <empty stack> - no trace,
+because extreme stack exhaustion left ASan no room to unwind.
+
+Re-running the same input class at a shallower depth (just past the
+crash threshold) restored symbolication, revealing the same
+parse_array / parse_inline_table / parse_keyval mixed-recursion cycle.
+
+Conclusion: the unsymbolicated crashes are NOT a distinct bug. They are
+the same mixed-nesting defect at depths too extreme for the sanitizer
+to produce a trace. Technique: diagnose deep crashes at shallow depth.
 All are unbounded-recursion stack overflows under an 8 MB stack, clang-18.
 
 *Thresholds are approximate and vary run-to-run by roughly 6-25 levels,
@@ -88,3 +100,28 @@ nested inputs trigger a DIFFERENT, newly-introduced bug:
 This turns a rediscovery into a novel finding: the fix for the old
 recursion bug introduced a distinct defect reachable by the same
 input class.
+
+
+## Second model: Qwen 3.6 27B (cross-model validation)
+
+To test whether improvement comes from the loop design or from one
+specific model, I ran the identical loop with a different-family model
+(Qwen 3.6 27B instead of GPT-OSS-120B), changing only one config value -
+made possible by the provider-agnostic call_llm() design.
+
+|                  | GPT-OSS-120B | Qwen 3.6 27B |
+|------------------|--------------|--------------|
+| Seed crashes     | 0            | 0            |
+| Final crashes    | ~49          | 47           |
+| Final depth      | 200,000      | 200,000      |
+| Final acceptance | 0.82         | 0.67         |
+
+Both models, driven by the same proxy signal, improved from 0 crashes
+to ~50. The improvement is therefore attributable to the loop design,
+not to a single model. Notably, Qwen kept acceptance within the target
+0.3-0.7 band while GPT-OSS drifted slightly above it - different models
+satisfy the same objective differently.
+
+Implementation note: Qwen is a reasoning model that consumed its token
+budget on <think> output. Setting reasoning_effort="none" and stripping
+think-tags was required - a one-file change, isolated behind call_llm().

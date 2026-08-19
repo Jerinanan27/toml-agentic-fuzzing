@@ -1,5 +1,7 @@
 import sys
 import os
+import re
+
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -10,9 +12,20 @@ IMPORT_LINE = (
     "from metrics import DottedKey\n"
 )
 
-
 def strip_fences(text: str) -> str:
-    """Remove markdown code fences if the model added them."""
+    """Remove reasoning tags and markdown fences some models add."""
+    # Remove closed <think>...</think> blocks
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    # Remove an unclosed <think> and everything after it up to code
+    # (Qwen sometimes runs out of tokens mid-reasoning)
+    if "<think>" in text:
+        # take everything AFTER the last </think>, or if none,
+        # look for the code start
+        if "</think>" in text:
+            text = text.split("</think>")[-1]
+        else:
+            # no close tag - the reasoning ate the whole response
+            text = ""
     text = text.strip()
     if text.startswith("```"):
         lines = text.split("\n")
@@ -21,7 +34,6 @@ def strip_fences(text: str) -> str:
             lines = lines[:-1]
         text = "\n".join(lines)
     return text.strip()
-
 
 def load_strategy(code: str):
     """Execute the code and pull out the `strategy` variable.
@@ -50,6 +62,9 @@ def ask_for_improvement(task_prompt: str, current_code: str, feedback: str) -> d
         + "\n\n=== "
         + feedback
         + "\n\nRewrite the strategy to fix the problems above. "
+        + "Return ONLY Python code, no explanation, no markdown fences. "
+        + "Define a variable named `strategy`."
+        + "Do NOT include reasoning or <think> blocks. "
         + "Return ONLY Python code, no explanation, no markdown fences. "
         + "Define a variable named `strategy`."
     )

@@ -1,7 +1,7 @@
 import os
 from groq import Groq
 
-MODEL = "openai/gpt-oss-120b"
+MODEL = os.environ.get("FUZZ_MODEL", "openai/gpt-oss-120b")
 
 
 def _load_env(path=".env"):
@@ -28,14 +28,20 @@ def call_llm(system_prompt: str, user_prompt: str) -> dict:
     """
     client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
+    kwargs = {
+        "model": MODEL,
+        "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        max_completion_tokens=4000,
-    )
+        "max_completion_tokens": 4000,
+    }
+    # Reasoning models (Qwen) waste the token budget "thinking" -
+    # tell them to skip it so they produce code directly.
+    if "qwen" in MODEL.lower():
+        kwargs["reasoning_effort"] = "none"
+
+    response = client.chat.completions.create(**kwargs)
 
     return {
         "text": response.choices[0].message.content,

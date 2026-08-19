@@ -1,0 +1,6 @@
+{
+  "input": "a = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k = { k ",
+  "input_len": 966303,
+  "depth": 120787,
+  "stderr": "AddressSanitizer:DEADLYSIGNAL\n=================================================================\n==3200==ERROR: AddressSanitizer: stack-overflow on address 0x7ffff6bf5ff8 (pc 0x645e6a51a069 bp 0x00000000001e sp 0x7ffff6bf6000 T0)\n    <empty stack>\n\nSUMMARY: AddressSanitizer: stack-overflow\n==3200==ABORTING\n"
+}

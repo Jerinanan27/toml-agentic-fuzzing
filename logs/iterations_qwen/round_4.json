@@ -1,0 +1,45 @@
+{
+  "iteration": 4,
+  "elapsed_seconds": 24.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 342,
+      "REJECTED": 121,
+      "CRASH": 37
+    },
+    "acceptance_rate": 0.684,
+    "depth_max": 200000,
+    "depth_avg": 9780.0,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string",
+      "unknown"
+    ],
+    "n_types": 7,
+    "distinct_errors": 3,
+    "top_errors": [
+      [
+        "reject: line 1: extra chars after value",
+        119
+      ],
+      [
+        "reject: line 1: bad escape char",
+        1
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:977)",
+        1
+      ]
+    ]
+  },
+  "n_crashes": 37,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 342, 'REJECTED': 121, 'CRASH': 37}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 7 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string', 'unknown']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 9780.0\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.684\n   TARGET: between 0.3 and 0.7\n   OK - in the target band.\n\n4. Distinct rejection messages: 3\n   Most common rejections:\n     119x  reject: line 1: extra chars after value\n     1x  reject: line 1: bad escape char\n     1x  reject: internal error (tomlc99/toml.c:977)\n\nCrashes found: 37\n  depth 200000, input length 400005\n  depth 191890, input length 1535125\n  depth 199999, input length 1599997",
+  "prompt_tokens": 2206,
+  "completion_tokens": 1029,
+  "refine_status": "accepted"
+}

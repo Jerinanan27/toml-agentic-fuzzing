@@ -1,0 +1,6 @@
+{
+  "input": "a = [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
+  "input_len": 200027,
+  "depth": 100000,
+  "stderr": "AddressSanitizer:DEADLYSIGNAL\n=================================================================\n==1093==ERROR: AddressSanitizer: stack-overflow on address 0x7ffd7a49fff8 (pc 0x5f18a63d106d bp 0x00000000001e sp 0x7ffd7a4a0000 T0)\n    <empty stack>\n\nSUMMARY: AddressSanitizer: stack-overflow\n==1093==ABORTING\n"
+}

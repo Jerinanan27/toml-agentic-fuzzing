@@ -25,3 +25,5 @@ venv/
 .hypothesis/
 scratch/
 logs/logs/
+tomlc17/
+*_asan

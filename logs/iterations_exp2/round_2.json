@@ -1,0 +1,39 @@
+{
+  "iteration": 2,
+  "elapsed_seconds": 34.3,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 441,
+      "CRASH": 53,
+      "HARNESS_ERROR": 3,
+      "REJECTED": 3
+    },
+    "acceptance_rate": 0.882,
+    "depth_max": 200000,
+    "depth_avg": 17324.3,
+    "types_seen": [
+      "array",
+      "bool",
+      "dotted_key",
+      "float",
+      "inline_table",
+      "integer",
+      "string"
+    ],
+    "n_types": 7,
+    "distinct_errors": 1,
+    "top_errors": [
+      [
+        "reject: line 1: unterminated quote",
+        3
+      ]
+    ]
+  },
+  "n_crashes": 53,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 441, 'CRASH': 53, 'HARNESS_ERROR': 3, 'REJECTED': 3}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 7 of 6 types. Types seen: ['array', 'bool', 'dotted_key', 'float', 'inline_table', 'integer', 'string']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 17324.3\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.882\n   TARGET: between 0.3 and 0.7\n   TOO HIGH - every input is valid TOML, so the parser's\n   error-handling code is never tested. Generate some\n   near-valid-but-malformed inputs: unescaped quotes inside\n   strings, missing brackets, duplicate keys, bad numbers.\n\n4. Distinct rejection messages: 1\n   Most common rejections:\n     3x  reject: line 1: unterminated quote\n\nCrashes found: 53\n  depth 102387, input length 204783\n  depth 100000, input length 200027\n  depth 179061, input length 1432495",
+  "prompt_tokens": 1522,
+  "completion_tokens": 1520,
+  "refine_status": "rejected",
+  "refine_error": "InvalidArgument: Cannot have allow_nan=True, with min_value or max_value"
+}

@@ -1,0 +1,54 @@
+{
+  "iteration": 2,
+  "elapsed_seconds": 11.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 231,
+      "REJECTED": 245,
+      "CRASH": 18,
+      "HARNESS_ERROR": 6
+    },
+    "acceptance_rate": 0.462,
+    "depth_max": 199999,
+    "depth_avg": 3624.6,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string",
+      "unknown"
+    ],
+    "n_types": 7,
+    "distinct_errors": 5,
+    "top_errors": [
+      [
+        "reject: line 1: extra chars after value",
+        213
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:1096)",
+        11
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:977)",
+        10
+      ],
+      [
+        "reject: line 1: unterminated triple-d-quote",
+        10
+      ],
+      [
+        "reject: line 2: missing =",
+        1
+      ]
+    ]
+  },
+  "n_crashes": 18,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 231, 'REJECTED': 245, 'CRASH': 18, 'HARNESS_ERROR': 6}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 7 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string', 'unknown']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 199999, average 3624.6\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.462\n   TARGET: between 0.3 and 0.7\n   OK - in the target band.\n\n4. Distinct rejection messages: 5\n   Most common rejections:\n     213x  reject: line 1: extra chars after value\n     11x  reject: internal error (tomlc99/toml.c:1096)\n     10x  reject: internal error (tomlc99/toml.c:977)\n     10x  reject: line 1: unterminated triple-d-quote\n     1x  reject: line 2: missing =\n\nCrashes found: 18\n  depth 178379, input length 356763\n  depth 19197, input length 38399\n  depth 78739, input length 157483",
+  "prompt_tokens": 2388,
+  "completion_tokens": 892,
+  "refine_status": "accepted"
+}

@@ -1,0 +1,50 @@
+{
+  "iteration": 5,
+  "elapsed_seconds": 28.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 408,
+      "HARNESS_ERROR": 19,
+      "CRASH": 49,
+      "REJECTED": 24
+    },
+    "acceptance_rate": 0.816,
+    "depth_max": 200000,
+    "depth_avg": 9325.6,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string"
+    ],
+    "n_types": 6,
+    "distinct_errors": 5,
+    "top_errors": [
+      [
+        "reject: line 1: unterminated quote",
+        11
+      ],
+      [
+        "reject: line 1: bad escape char",
+        8
+      ],
+      [
+        "reject: line 1: unterminated triple-d-quote",
+        2
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:1096)",
+        2
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:977)",
+        1
+      ]
+    ]
+  },
+  "n_crashes": 49,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 408, 'HARNESS_ERROR': 19, 'CRASH': 49, 'REJECTED': 24}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 6 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 9325.6\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.816\n   TARGET: between 0.3 and 0.7\n   TOO HIGH - every input is valid TOML, so the parser's\n   error-handling code is never tested. Generate some\n   near-valid-but-malformed inputs: unescaped quotes inside\n   strings, missing brackets, duplicate keys, bad numbers.\n\n4. Distinct rejection messages: 5\n   Most common rejections:\n     11x  reject: line 1: unterminated quote\n     8x  reject: line 1: bad escape char\n     2x  reject: line 1: unterminated triple-d-quote\n     2x  reject: internal error (tomlc99/toml.c:1096)\n     1x  reject: internal error (tomlc99/toml.c:977)\n\nCrashes found: 49\n  depth 76157, input length 380795\n  depth 99999, input length 500001\n  depth 54560, input length 272809"
+}

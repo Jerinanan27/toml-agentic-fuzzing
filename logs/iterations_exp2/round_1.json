@@ -1,0 +1,54 @@
+{
+  "iteration": 1,
+  "elapsed_seconds": 38.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 52,
+      "CRASH": 67,
+      "ACCEPTED": 380,
+      "HARNESS_ERROR": 1
+    },
+    "acceptance_rate": 0.76,
+    "depth_max": 200000,
+    "depth_avg": 15406.2,
+    "types_seen": [
+      "array",
+      "bool",
+      "dotted_key",
+      "float",
+      "inline_table",
+      "integer",
+      "string"
+    ],
+    "n_types": 7,
+    "distinct_errors": 9,
+    "top_errors": [
+      [
+        "reject: line 1: unterminated quote",
+        28
+      ],
+      [
+        "reject: line 1: bad escape char",
+        8
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:977)",
+        4
+      ],
+      [
+        "reject: internal error (tomlc99/toml.c:1096)",
+        3
+      ],
+      [
+        "reject: line 1: extra chars after value",
+        3
+      ]
+    ]
+  },
+  "n_crashes": 67,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 52, 'CRASH': 67, 'ACCEPTED': 380, 'HARNESS_ERROR': 1}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 7 of 6 types. Types seen: ['array', 'bool', 'dotted_key', 'float', 'inline_table', 'integer', 'string']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 15406.2\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.76\n   TARGET: between 0.3 and 0.7\n   TOO HIGH - every input is valid TOML, so the parser's\n   error-handling code is never tested. Generate some\n   near-valid-but-malformed inputs: unescaped quotes inside\n   strings, missing brackets, duplicate keys, bad numbers.\n\n4. Distinct rejection messages: 9\n   Most common rejections:\n     28x  reject: line 1: unterminated quote\n     8x  reject: line 1: bad escape char\n     4x  reject: internal error (tomlc99/toml.c:977)\n     3x  reject: internal error (tomlc99/toml.c:1096)\n     3x  reject: line 1: extra chars after value\n\nCrashes found: 67\n  depth 102265, input length 204535\n  depth 48074, input length 96160\n  depth 18200, input length 36407",
+  "prompt_tokens": 1563,
+  "completion_tokens": 1782,
+  "refine_status": "accepted"
+}

@@ -1,0 +1,34 @@
+{
+  "iteration": 5,
+  "elapsed_seconds": 33.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "ACCEPTED": 335,
+      "REJECTED": 118,
+      "CRASH": 47
+    },
+    "acceptance_rate": 0.67,
+    "depth_max": 200000,
+    "depth_avg": 10230.1,
+    "types_seen": [
+      "array",
+      "bool",
+      "float",
+      "inline_table",
+      "integer",
+      "string",
+      "unknown"
+    ],
+    "n_types": 7,
+    "distinct_errors": 1,
+    "top_errors": [
+      [
+        "reject: line 1: extra chars after value",
+        118
+      ]
+    ]
+  },
+  "n_crashes": 47,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'ACCEPTED': 335, 'REJECTED': 118, 'CRASH': 47}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Type coverage: 7 of 6 types. Types seen: ['array', 'bool', 'float', 'inline_table', 'integer', 'string', 'unknown']\n   OK - target of 6 types is met. Keep it there.\n\n2. Nesting depth: max 200000, average 10230.1\n   TARGET: the parser only crashes past roughly 100000 levels.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.67\n   TARGET: between 0.3 and 0.7\n   OK - in the target band.\n\n4. Distinct rejection messages: 1\n   Most common rejections:\n     118x  reject: line 1: extra chars after value\n\nCrashes found: 47\n  depth 167876, input length 335757\n  depth 15606, input length 31217\n  depth 183522, input length 367049"
+}
