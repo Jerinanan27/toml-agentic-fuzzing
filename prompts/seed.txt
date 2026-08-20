@@ -1,48 +1,123 @@
-Write a Hypothesis strategy that generates TOML values.
+You are writing a Hypothesis strategy that generates TOML documents to
+fuzz tomlc99, a C TOML parser built with AddressSanitizer.
 
-CONTRACT - your strategy must produce ONLY these Python types:
-  int    -> becomes a TOML integer
-  float  -> becomes a TOML float
-  bool   -> becomes true/false
-  str    -> becomes a quoted string
-  list   -> becomes a TOML array
-  dict   -> becomes a TOML inline table (keys must be simple
-            lowercase identifiers, values follow the same rules)
-  DottedKey(depth, value) -> becomes a dotted key like a.b.c = value
-Do NOT produce tuples, None, sets, or any other type.
-Dict keys must be plain strings like "a", "key1", "name" - never
-numbers, never containing spaces or dots.
+=== OUTPUT CONTRACT (mandatory) ===
 
-REQUIREMENTS:
-- Use st.recursive so arrays and inline tables can nest inside
-  each other and inside themselves.
-- To reach very deep nesting, do NOT use st.lists with a large min_size -
-  Hypothesis refuses to build lists that big. Instead:
-    draw a plain integer D from st.integers(min_value=100, max_value=200000)
-    then use .map() with a normal Python for-loop that wraps a base value
-    in D layers of [ ] or { "k": ... }
-  Hypothesis chooses the number; a plain loop does the wrapping.
-- Target: some inputs must reach 100000+ levels of nesting.
-- Cover these edge cases explicitly:
-    empty lists and empty inline tables
-    very large and very small integers
-    floats including 0.0 and negatives
-    strings containing quotes, backslashes and unicode
-    booleans
-- The final `strategy` must be a mix: mostly varied shallow values
-  from st.recursive, plus a meaningful share of these explicitly
-  deep structures.
+Do NOT generate TOML text. Generate structured node objects. A separate
+serializer renders them to text, and a measurement tool walks them to
+compute grammar coverage and nesting depth. If you emit strings, both
+are impossible.
 
-- ALSO generate deeply nested DOTTED KEYS, a separate crash class.
-  A dotted key looks like a.b.c.d = value. To make one, use the
-  DottedKey helper: DottedKey(D, base_value) where D is the number
-  of key segments. Draw D from st.integers(min_value=100, max_value=200000)
-  and .map() it into a DottedKey. Some inputs must be dotted keys
-  100000+ segments deep.
+These classes are already imported. Use only these:
 
-OUTPUT FORMAT:
-Return ONLY Python code. No explanation, no markdown fences.
-The code must define a variable named `strategy`.
-Assume `from hypothesis import strategies as st` is already available.
-Use correct Hypothesis argument names. st.lists and st.dictionaries take
-min_size and max_size, NOT min_value and max_value.
+  Document(statements)          whole file; statements is a list
+  KeyValue(key, value)          key = value
+  TableHeader(path)             [a.b]      path = list of str
+  ArrayTableHeader(path)        [[a.b]]    path = list of str
+  Comment(text)                 # text
+  QuotedKey(text, literal=False)  "k" or 'k' when literal=True
+  DottedKey(depth, value)       a.a.a... = value, `depth` segments
+  RawValue(text, production)    literal TOML text + its production name
+
+A KeyValue key may be: a str (bare key), a list of str (dotted key),
+or a QuotedKey. A value may be: int, float, bool, str, list (array),
+dict (inline table), or RawValue.
+
+Define a module-level variable named `strategy`.
+
+=== THE GRAMMAR (ANTLR grammars-v4, TomlParser.g4) ===
+
+document   : expression (NL expression)* EOF
+expression : key_value comment | table comment | comment
+comment    : COMMENT?
+key_value  : key EQUALS value
+key        : simple_key | dotted_key
+simple_key : quoted_key | unquoted_key
+quoted_key : BASIC_STRING | LITERAL_STRING
+dotted_key : simple_key (DOT simple_key)+
+value      : string | integer | floating_point | bool_
+           | date_time | array_ | inline_table
+string         : BASIC_STRING | ML_BASIC_STRING
+               | LITERAL_STRING | ML_LITERAL_STRING
+integer        : DEC_INT | HEX_INT | OCT_INT | BIN_INT
+floating_point : FLOAT | INF | NAN
+bool_          : BOOLEAN
+date_time      : OFFSET_DATE_TIME | LOCAL_DATE_TIME
+               | LOCAL_DATE | LOCAL_TIME
+array_       : L_BRACKET array_values? comment_or_nl R_BRACKET
+array_values : (comment_or_nl value nl_or_comment COMMA array_values
+                comment_or_nl)
+             | comment_or_nl value nl_or_comment COMMA?
+table          : standard_table | array_table
+standard_table : L_BRACKET key R_BRACKET
+array_table    : DOUBLE_L_BRACKET key DOUBLE_R_BRACKET
+inline_table   : L_BRACE inline_table_keyvals R_BRACE
+inline_table_keyvals : inline_table_keyvals_non_empty?
+inline_table_keyvals_non_empty
+    : key EQUALS value (COMMA inline_table_keyvals_non_empty)?
+
+Token forms (TomlLexer.g4). Emit these with RawValue(text, production):
+
+  OFFSET_DATE_TIME  1979-05-27T07:32:00Z   1979-05-27 07:32:00.999+07:00
+  LOCAL_DATE_TIME   1979-05-27T07:32:00    (T, t or space delimiter)
+  LOCAL_DATE        1979-05-27
+  LOCAL_TIME        07:32:00.999
+  DEC_INT           42  -17  +1_000_000
+  HEX_INT           0xDEAD_BEEF
+  OCT_INT           0o755
+  BIN_INT           0b1101_0110
+  FLOAT             3.14  1e10  -2.5E-3
+  INF               inf  +inf  -inf
+  NAN               nan  +nan  -nan
+  BASIC_STRING      "esc: \n \t \" \\ \u00E9 \U0001F600"
+  LITERAL_STRING    'no escapes at all'
+  ML_BASIC_STRING   """multi
+                    line"""
+  ML_LITERAL_STRING '''multi
+                    line'''
+  UNQUOTED_KEY      [A-Za-z0-9_-]+
+
+Lexer note: TOML is lexed in modes, so `[` at line start is a table
+header while `[` after `=` starts an array. Position decides meaning.
+
+=== LIBRARY GAP (tomlc99 vs the formal grammar) ===
+
+- toml_parse takes a NUL-terminated char* with no length, so an input
+  containing a 0x00 byte cannot be tested. Never emit NUL bytes.
+- Verified accepted: hex integers, inline tables, empty inline tables,
+  all four datetime forms, all four string forms, underscore separators.
+- Known defect class: unbounded recursion. Stack overflow past roughly
+  14,800 nested arrays / 52,000 nested inline tables / 87,000 dotted
+  key segments, under an 8 MB stack.
+
+=== REQUIREMENTS ===
+
+1. Use st.recursive and/or @st.composite for the recursive productions
+   (array_, inline_table, and their mutual nesting). Do not flatten
+   recursion into a fixed number of hand-written levels.
+2. Cover every production listed above. Productions never generated are
+   parser code never reached.
+3. Cover these edge cases explicitly:
+   - empty containers: [] and {}
+   - deep nesting: some inputs must exceed 100,000 levels
+   - duplicate keys: the same key defined twice in one table, and the
+     same table header declared twice
+   - extreme numeric values: int64 min/max and just beyond, huge and
+     tiny exponents, leading zeros, -0
+   - unicode and escapes: \uXXXX, \UXXXXXXXX, invalid escapes,
+     unterminated escapes, astral-plane characters
+   - near-valid-but-malformed: unterminated string, missing closing
+     bracket, trailing '=', impossible datetime (month 13, day 32),
+     integer with a trailing underscore, bare unquoted value
+
+=== OBJECTIVE ===
+
+Maximise grammar production coverage and nesting depth, while keeping
+the parser's acceptance rate between 0.3 and 0.7.
+
+Acceptance near 1.0 means no malformed inputs, so error-handling code is
+never tested. Acceptance near 0.0 means inputs are rejected at the front
+door and the parser's real logic is never reached. Both are failures.
+
+Generating deep structures is cheap only if built iteratively — build
+100,000-level nesting with a loop, not with recursive Python calls

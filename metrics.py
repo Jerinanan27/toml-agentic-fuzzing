@@ -175,7 +175,11 @@ def node_types(node) -> set:
             found.update({"expression", "key_value", "key", "value"})
             if isinstance(current.key, str):
                 found.update({"simple_key", "unquoted_key"})
-            stack.append(current.key)
+            elif isinstance(current.key, list):
+                # a.b.c - a list of key segments, NOT an array value
+                found.update({"dotted_key", "simple_key", "unquoted_key"})
+            else:
+                stack.append(current.key)   # QuotedKey / DottedKey handle themselves
             stack.append(current.value)
         elif isinstance(current, QuotedKey):
             found.update({"simple_key", "quoted_key"})

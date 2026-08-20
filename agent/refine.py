@@ -9,7 +9,8 @@ from llm import call_llm
 
 IMPORT_LINE = (
     "from hypothesis import strategies as st\n"
-    "from metrics import DottedKey\n"
+    "from metrics import DottedKey, RawValue, QuotedKey, Document, \\\n"
+    "    TableHeader, ArrayTableHeader, Comment, KeyValue\n"
 )
 
 def strip_fences(text: str) -> str:
