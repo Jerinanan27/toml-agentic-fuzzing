@@ -1,0 +1,50 @@
+{
+  "iteration": 5,
+  "elapsed_seconds": 4.1,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 410,
+      "ACCEPTED": 88,
+      "CRASH": 2
+    },
+    "acceptance_rate": 0.176,
+    "depth_max": 19970,
+    "depth_avg": 1133.8,
+    "productions_covered": 22,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_"
+    ],
+    "distinct_errors": 22,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        182
+      ],
+      [
+        "reject: line 2: invalid key",
+        54
+      ],
+      [
+        "reject: line 1: missing =",
+        42
+      ],
+      [
+        "reject: line 7: invalid key",
+        21
+      ],
+      [
+        "reject: line 5: invalid key",
+        19
+      ]
+    ],
+    "crash_signatures": {
+      "parse_array": 2
+    },
+    "elapsed_seconds": 4.1,
+    "stopped_early": false
+  },
+  "n_crashes": 2,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 410, 'ACCEPTED': 88, 'CRASH': 2}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 22 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 19970, average 1133.8\n   TARGET: the parser only crashes past roughly 15000-90000\n   levels, depending on the construct.\n   TOO SHALLOW - max depth 19970.\n   Some inputs must reach 100000+ levels of nesting.\n\n3. Acceptance rate: 0.176   TARGET: 0.3 to 0.7\n   TOO LOW - most inputs are rejected at the front door,\n   so the parser's real logic is never reached.\n\n4. Distinct rejection messages: 22\n   Most common rejections:\n     182x  reject: line 1: invalid key\n     54x  reject: line 2: invalid key\n     42x  reject: line 1: missing =\n     21x  reject: line 7: invalid key\n     19x  reject: line 5: invalid key\n\nCrashes found: 2\nUnique crash signatures (recursion cycles):\n  2x  parse_array\nSignatures already found are not new information -\ntarget grammar productions that have NOT yet crashed."
+}

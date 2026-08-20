@@ -1,0 +1,54 @@
+{
+  "iteration": 2,
+  "elapsed_seconds": 4.5,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 424,
+      "ACCEPTED": 75,
+      "CRASH": 1
+    },
+    "acceptance_rate": 0.15,
+    "depth_max": 20001,
+    "depth_avg": 1783.9,
+    "productions_covered": 22,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_"
+    ],
+    "distinct_errors": 21,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        205
+      ],
+      [
+        "reject: line 2: invalid key",
+        54
+      ],
+      [
+        "reject: line 1: missing =",
+        44
+      ],
+      [
+        "reject: line 4: invalid key",
+        18
+      ],
+      [
+        "reject: line 5: invalid key",
+        17
+      ]
+    ],
+    "crash_signatures": {
+      "parse_array": 1
+    },
+    "elapsed_seconds": 4.4,
+    "stopped_early": false
+  },
+  "n_crashes": 1,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 424, 'ACCEPTED': 75, 'CRASH': 1}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 22 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 20001, average 1783.9\n   TARGET: the parser only crashes past roughly 15000-90000\n   levels, depending on the construct.\n   TOO SHALLOW - max depth 20001.\n   Some inputs must reach 100000+ levels of nesting.\n\n3. Acceptance rate: 0.15   TARGET: 0.3 to 0.7\n   TOO LOW - most inputs are rejected at the front door,\n   so the parser's real logic is never reached.\n\n4. Distinct rejection messages: 21\n   Most common rejections:\n     205x  reject: line 1: invalid key\n     54x  reject: line 2: invalid key\n     44x  reject: line 1: missing =\n     18x  reject: line 4: invalid key\n     17x  reject: line 5: invalid key\n\nCrashes found: 1\nUnique crash signatures (recursion cycles):\n  1x  parse_array\nSignatures already found are not new information -\ntarget grammar productions that have NOT yet crashed.",
+  "prompt_tokens": 2004,
+  "completion_tokens": 1883,
+  "refine_status": "rejected",
+  "refine_error": "TypeError: lists() got an unexpected keyword argument 'min_value'"
+}

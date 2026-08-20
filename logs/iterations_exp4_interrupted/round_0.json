@@ -1,0 +1,54 @@
+{
+  "iteration": 0,
+  "elapsed_seconds": 17.1,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 471,
+      "CRASH": 4,
+      "HARNESS_ERROR": 25
+    },
+    "acceptance_rate": 0.0,
+    "depth_max": 109999,
+    "depth_avg": 13260.0,
+    "productions_covered": 22,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_"
+    ],
+    "distinct_errors": 23,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        190
+      ],
+      [
+        "reject: line 2: invalid key",
+        68
+      ],
+      [
+        "reject: line 3: key exists",
+        50
+      ],
+      [
+        "reject: line 2: key exists",
+        50
+      ],
+      [
+        "reject: line 1: missing =",
+        38
+      ]
+    ],
+    "crash_signatures": {
+      "parse_array": 2,
+      "parse_inline_table + parse_keyval": 2
+    },
+    "elapsed_seconds": 16.9,
+    "stopped_early": false
+  },
+  "n_crashes": 4,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 471, 'CRASH': 4, 'HARNESS_ERROR': 25}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 22 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 109999, average 13260.0\n   This is the PRIMARY objective. The parser's known defect\n   class is unbounded recursion, reachable only past roughly\n   15,000 (arrays), 52,000 (inline tables) and 87,000\n   (dotted keys) levels.\n   OK - reaching crash territory. Do not reduce it.\n\n3. Acceptance rate: 0.0   TARGET: 0.3 to 0.7\n   SECONDARY to depth. Note acceptance is measured per\n   document: one malformed line rejects the whole file.\n   Raise it by making the SHALLOW statements valid, not by\n   removing deep ones.\n   TOO LOW - most documents rejected. Make the ordinary\n   key-value lines well-formed while keeping one deep value.\n\n4. Distinct rejection messages: 23\n   Most common rejections:\n     190x  reject: line 1: invalid key\n     68x  reject: line 2: invalid key\n     50x  reject: line 3: key exists\n     50x  reject: line 2: key exists\n     38x  reject: line 1: missing =\n\nCrashes found: 4\nUnique crash signatures (recursion cycles):\n  2x  parse_array\n  2x  parse_inline_table + parse_keyval\nSignatures already found are not new information -\ntarget grammar productions that have NOT yet crashed.",
+  "prompt_tokens": 2146,
+  "completion_tokens": 2854,
+  "refine_status": "accepted"
+}

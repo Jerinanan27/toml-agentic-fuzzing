@@ -14,6 +14,12 @@ EXIT_HARNESS_ERROR = 51
 HARNESS = "./harness/harness_asan"
 TIMEOUT_SECONDS = 5
 
+# Resource guard. Far above any measured crash threshold - the deepest
+# reproducer (87,000 dotted-key segments) is about 175 KB - so this cannot
+# suppress a real finding. It exists to stop a runaway generator from
+# exhausting memory before the wall-clock cap notices.
+MAX_INPUT_BYTES = 8 * 1024 * 1024
+
 SANITIZER_ENV = {
     "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1",
     "UBSAN_OPTIONS": "print_stacktrace=1:report_error_type=1:halt_on_error=1",
@@ -22,6 +28,14 @@ SANITIZER_ENV = {
 
 def run_once(data: bytes) -> dict:
     """Feed `data` to the harness on stdin. Report what came back."""
+    if len(data) > MAX_INPUT_BYTES:
+        return {
+            "returncode": None,
+            "stderr": f"harness: input {len(data)} bytes exceeds cap",
+            "timed_out": False,
+            "oversized": True,
+        }
+
     env = dict(os.environ)
     env.update(SANITIZER_ENV)
 
@@ -48,10 +62,14 @@ def classify(result: dict) -> str:
     """Turn a raw run result into one of five outcomes.
     The ORDER of these checks is the design - see comments."""
 
+    # 0. Oversized inputs never reached the harness, so they are a harness
+    # outcome, not a parser verdict.
+    if result.get("oversized"):
+        return "HARNESS_ERROR"
+
     # 1. A hang is a hang regardless of what it printed.
     if result["timed_out"]:
         return "HANG"
-
     # 2. Sanitizer text is authoritative. It can appear even when the
     #    exit code looks perfectly healthy - which is exactly the
     #    failure this ordering exists to prevent.

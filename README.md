@@ -1,123 +1,134 @@
 # Agentic Blackbox Fuzzing of a TOML Parser
 
-An LLM-driven fuzzer that writes its own input generator, measures how
-well it performs against a proxy signal, and improves itself across
-iterations — with no access to code coverage.
+An LLM-driven fuzzer that turns a formal grammar into a Hypothesis
+strategy, measures that strategy against a proxy signal, and refines it
+across iterations — with no access to code coverage.
 
 **Target:** [tomlc99](https://github.com/cktan/tomlc99), a C TOML parser,
 pinned at commit `29076df`.
 
-## Result in one line
-
-Starting from a generator that found **0 crashes**, the feedback loop
-drove it to find **~55 crashes per 500 inputs** — while a random baseline
-and the un-refined seed both found **0**. The improvement comes from the
-loop, not from a lucky model: a second, different-family model reproduced
-the same 0→~50 gain.
-
 ## The problem
 
-Fuzzers are normally guided by code coverage. This project is **blackbox**:
-no coverage instrumentation. The core question is what to measure instead
-— the *proxy signal* — to steer an LLM toward inputs that find bugs.
-See [`SIGNAL.md`](SIGNAL.md) for the full design.
+Fuzzers are normally steered by code coverage. This project is
+**blackbox**: sanitizers only, no instrumentation. The core design
+question is what to measure instead — the *proxy signal* — to steer an
+LLM toward inputs that find bugs. See [`SIGNAL.md`](SIGNAL.md).
 
 ## How it works
 
 ```
-seed strategy
-     │
-     ▼
-generate 500 inputs ──► harness + sanitizers ──► oracle (5 outcomes)
-     ▲                                                │
-     │                                                ▼
-LLM rewrites          ◄── proxy-signal feedback ◄── metrics
-   strategy               (depth, type coverage,
-                           acceptance, error diversity)
+grammar (TomlParser.g4) ──► seed prompt ──► LLM ──► Hypothesis strategy
+                                                          │
+                                                          ▼
+                            structured AST nodes ──► serialize ──► TOML text
+                                     │                                  │
+                                     ▼                                  ▼
+                              metrics.py                    harness + ASan/UBSan
+                        (depth, production coverage)                    │
+                                     │                                  ▼
+                                     └──────► proxy signal ◄──── oracle (5 outcomes)
+                                                    │
+                                                    ▼
+                                              LLM rewrites
 ```
 
-Five iterations. The LLM only ever sees the proxy signal, never the
-target's source.
+The generator emits **structured nodes, not text**. A separate serializer
+renders them to TOML. This makes nesting depth a tree walk rather than a
+bracket-counting heuristic, and makes grammar-production coverage exact
+rather than inferred.
 
-## Key results
+The LLM sees only the proxy signal. It never sees the target's source.
 
-**Method works (control experiment, 500 inputs each):**
+## Results
 
-| Approach | Crashes | Max depth |
+**Grammar-derived generation beats random** (control experiment,
+500 inputs per arm, mean of three runs):
+
+| Arm | Crashes | Max depth |
 |---|---|---|
-| Random baseline | 0 | 0 |
-| Seed strategy (iteration 0) | 0 | 3,939 |
-| Evolved strategy (iteration 5) | 55 | 200,000 |
+| Random baseline | 0.0 | 0 |
+| Grammar-seeded strategy | 5.0 | ~110,000 |
+| Exp3 final — flat objective | 1.3 | ~20,000 |
+| Exp4 final — depth prioritised | 6.7 | ~110,000 |
 
-**Bugs found (triaged by recursion cycle):** deep arrays, deep dotted
-keys, deep inline tables, and mixed nestings — all unbounded-recursion
-stack overflows. Approximate crash thresholds under an 8 MB stack:
-arrays ~14,850, inline tables ~52,400, dotted keys ~87,300.
+Two things this shows, and one it does not:
+
+- Random generation found **zero** crashes in all three runs. Grammar
+  derivation is what makes the defect class reachable at all.
+- A **flat objective made the generator worse than its own seed** (5.0 →
+  1.3). Five refinement iterations under an underspecified objective
+  degraded capability.
+- It does **not** show that refinement improved on the seed (5.0 → 6.7,
+  overlapping ranges). With a sufficiently specific seed prompt, iteration
+  had little left to contribute.
+
+**Bugs found:** five distinct recursion cycles, all unbounded-recursion
+stack overflows. Binary-searched thresholds under an 8 MB stack with
+ASan: arrays ~14,850, inline tables ~52,360, dotted keys ~87,270.
 
 **Differential test against the maintained successor
-([tomlc17](https://github.com/cktan/tomlc17)):** the stack-overflow
-recursion was fixed, but the same deeply-nested inputs trigger a
-*different, newly-introduced* bug — a null-pointer dereference at
-`tomlc17.c:110`, caused by an unchecked return from `page_create()`.
+([tomlc17](https://github.com/cktan/tomlc17)):** the recursion overflow is
+fixed, but the same deeply-nested inputs trigger a *different, newly
+introduced* defect — a null-pointer dereference at `tomlc17.c:110` from
+an unchecked `page_create()` return.
 
-**Cross-model validation:** rerunning the loop with Qwen 3.6 27B
-(vs GPT-OSS-120B) reproduced the 0→~50 crash improvement, showing the
-result is driven by the loop, not a single model.
-
-Full details in [`FINDINGS.md`](FINDINGS.md).
+Full details, including negative results, in [`FINDINGS.md`](FINDINGS.md).
 
 ## Reproduce
 
-Everything runs in a pinned Docker environment.
-
 ```bash
-# build the environment
 docker build -t fuzz:pinned .
 
-# enter it (8 MB stack matters - see below)
 docker run --rm -it -v "$PWD":/work \
     --ulimit stack=8388608:8388608 fuzz:pinned
 
 # inside the container:
 cd /work
-clang -O1 -g -fno-omit-frame-pointer \
-      -fsanitize=address,undefined -fno-sanitize-recover=all \
-      -I tomlc99 harness/harness.c tomlc99/toml.c -o harness/harness_asan
+./build.sh                   # sanitizer build of harness + tomlc99
 
-python3 agent/loop.py        # run the agentic loop
-python3 control.py           # run the control experiment
-python3 triage.py            # group crashes into distinct bugs
-python3 minimize.py          # find crash-depth thresholds
+python3 agent/seed.py        # generate iteration 0 from the grammar
+FUZZ_TAG=exp4 python3 agent/loop.py   # run the agentic loop
+python3 control.py           # four-arm control experiment
+python3 triage.py            # group crashes by recursion cycle
+python3 minimize.py          # binary-search crash thresholds
+python3 triage/shrink.py     # Hypothesis shrinker minimisation
 ```
 
-Crash depth thresholds depend on the stack limit, so the
-`--ulimit stack=8388608` flag is required for reproducible numbers.
+The `--ulimit stack=8388608` flag is **required**. Every depth threshold
+reported here is relative to an 8 MB stack; without the flag the numbers
+are not comparable.
 
 ## Repository map
 
 | Path | What it is |
 |---|---|
+| `grammar/Toml{Lexer,Parser}.g4` | The ANTLR grammar (from grammars-v4) |
+| `GRAMMAR.md` | Grammar in plain words + spec-vs-library gap |
 | `harness/harness.c` | Feeds one input to tomlc99, reports the outcome |
-| `oracle.py` | Classifies a run into 5 outcomes (accept/reject/crash/hang/error) |
-| `metrics.py` | Structure depth, type coverage, serializer |
-| `SIGNAL.md` | The proxy-signal design (the core decision) |
+| `harness/harness17.c` | Same, for tomlc17 (differential test) |
+| `build.sh` | Sanitizer build |
+| `oracle.py` | Classifies a run into 5 outcomes |
+| `metrics.py` | AST node types, depth, production coverage, serializer |
+| `SIGNAL.md` | The proxy-signal design, and how it was revised |
+| `prompts/seed.txt` | The seed prompt: contract + grammar + gap + edge cases |
+| `agent/seed.py` | Generates iteration 0, with validation and repair |
 | `agent/loop.py` | The agentic loop |
-| `agent/runner.py` | Runs one round, builds feedback |
+| `agent/runner.py` | Runs one round, computes metrics, builds feedback |
 | `agent/refine.py` | Calls the LLM, validates returned code |
 | `llm.py` | Provider-agnostic LLM interface |
 | `triage.py` | Groups crashes by recursion cycle |
+| `triage/shrink.py` | Hypothesis-shrinker minimisation per signature |
 | `minimize.py` | Binary-searches crash-depth thresholds |
-| `control.py` | Random vs seed vs evolved experiment |
-| `GRAMMAR.md` | TOML grammar and spec-vs-library gaps |
-| `FINDINGS.md` | All results |
+| `control.py` | Four-arm control experiment |
+| `strategies/baseline.py` | The naive control arm |
+| `strategies/generated_exp*/` | One file per iteration — the evolution log |
+| `logs/iterations_exp*/` | Per-round metrics, feedback, tokens, model |
+| `crashes_exp*/` | Full input, full stderr, exit code, signature |
+| `FINDINGS.md` | All results, including negative ones |
 | `TARGET.md` | Pinned environment and exit-code contract |
-| `logs/`, `crashes/`, `strategies/generated*` | Raw experiment data |
 
 ## Environment
 
-- Base: `ubuntu:24.04`, clang-18
-- Stack limit: 8 MB
-- LLM: GPT-OSS-120B (and Qwen 3.6 27B) via Groq
-- Total LLM cost: ~$0.013
-
-
+- Base: `ubuntu:24.04`, clang-18, 8 MB stack
+- LLM: `openai/gpt-oss-120b` via Groq (open-weight, not frontier)
+- Total LLM cost across all experiments: under $0.05, ~1% of the $5 budget

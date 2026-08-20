@@ -1,0 +1,53 @@
+{
+  "iteration": 0,
+  "elapsed_seconds": 12.4,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 475,
+      "HARNESS_ERROR": 23,
+      "CRASH": 2
+    },
+    "acceptance_rate": 0.0,
+    "depth_max": 110001,
+    "depth_avg": 9448.8,
+    "productions_covered": 22,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_"
+    ],
+    "distinct_errors": 21,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        192
+      ],
+      [
+        "reject: line 2: invalid key",
+        58
+      ],
+      [
+        "reject: line 1: missing =",
+        53
+      ],
+      [
+        "reject: line 3: key exists",
+        50
+      ],
+      [
+        "reject: line 2: key exists",
+        50
+      ]
+    ],
+    "crash_signatures": {
+      "parse_inline_table + parse_keyval": 2
+    },
+    "elapsed_seconds": 12.2,
+    "stopped_early": false
+  },
+  "n_crashes": 2,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 475, 'HARNESS_ERROR': 23, 'CRASH': 2}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 22 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 110001, average 9448.8\n   TARGET: the parser only crashes past roughly 15000-90000\n   levels, depending on the construct.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.0   TARGET: 0.3 to 0.7\n   TOO LOW - most inputs are rejected at the front door,\n   so the parser's real logic is never reached.\n\n4. Distinct rejection messages: 21\n   Most common rejections:\n     192x  reject: line 1: invalid key\n     58x  reject: line 2: invalid key\n     53x  reject: line 1: missing =\n     50x  reject: line 3: key exists\n     50x  reject: line 2: key exists\n\nCrashes found: 2\nUnique crash signatures (recursion cycles):\n  2x  parse_inline_table + parse_keyval\nSignatures already found are not new information -\ntarget grammar productions that have NOT yet crashed.",
+  "prompt_tokens": 2035,
+  "completion_tokens": 2947,
+  "refine_status": "accepted"
+}

@@ -3,8 +3,11 @@ import os
 import json
 import time
 
+# Path must be set before importing project modules, since this file is run
+# directly (python3 agent/loop.py) and /work is not otherwise on sys.path.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from llm import MODEL
 from agent.runner import run_round, format_feedback
 from agent.refine import ask_for_improvement, load_strategy, validate_strategy
 
@@ -38,7 +41,7 @@ def save_crashes(crashes: list, n: int) -> None:
 
 def main():
     task = open("prompts/seed.txt").read()
-    current_code = open("strategies/seed_v3.py").read()
+    current_code = open("strategies/seed_grammar.py").read()
     current_strategy = load_strategy(current_code)
 
     total_in = 0
@@ -59,17 +62,22 @@ def main():
         print(f"  outcomes:   {summary['outcomes']}")
         print(f"  depth max:  {summary['depth_max']}")
         print(f"  acceptance: {summary['acceptance_rate']}")
-        print(f"  types:      {summary['n_types']}/6")
+        print(f"  productions: {summary['productions_covered']}"
+              f"/{summary['productions_total']}")
         print(f"  crashes:    {len(summary['crashes'])}")
         print(f"  took:       {elapsed}s")
 
         if summary["crashes"]:
             save_crashes(summary["crashes"], n)
+        if summary["stopped_early"]:
+            print(f"  WALL-CLOCK CAP HIT after {summary['elapsed_seconds']}s")
 
         feedback = format_feedback(summary)
 
         record = {
             "iteration": n,
+            "model": MODEL,          # recorded per round, so a failed
+                                     # refine call still leaves a trace
             "elapsed_seconds": elapsed,
             "summary": {k: v for k, v in summary.items() if k != "crashes"},
             "n_crashes": len(summary["crashes"]),
@@ -91,6 +99,7 @@ def main():
             total_out += response["completion_tokens"]
             record["prompt_tokens"] = response["prompt_tokens"]
             record["completion_tokens"] = response["completion_tokens"]
+            record["model"] = response["model"]
 
             new_strategy = load_strategy(response["code"])
             validate_strategy(new_strategy)
@@ -104,6 +113,7 @@ def main():
             record["refine_status"] = "rejected"
             record["refine_error"] = f"{type(e).__name__}: {str(e)[:300]}"
             print(f"  REJECTED: {type(e).__name__} - keeping previous strategy")
+            print(f"    {str(e)[:250]}")
 
         save_log(record, n)
 

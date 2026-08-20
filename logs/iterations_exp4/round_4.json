@@ -1,0 +1,56 @@
+{
+  "iteration": 4,
+  "elapsed_seconds": 123.0,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 496,
+      "CRASH": 4
+    },
+    "acceptance_rate": 0.0,
+    "depth_max": 110001,
+    "depth_avg": 104806.5,
+    "productions_covered": 20,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_",
+      "dotted_key",
+      "quoted_key"
+    ],
+    "distinct_errors": 9,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        213
+      ],
+      [
+        "reject: line 1: missing =",
+        159
+      ],
+      [
+        "reject: line 2: invalid key",
+        50
+      ],
+      [
+        "reject: line 2: missing =",
+        40
+      ],
+      [
+        "reject: line 3: missing =",
+        13
+      ]
+    ],
+    "crash_signatures": {
+      "parse_array": 2,
+      "parse_inline_table + parse_keyval": 2
+    },
+    "elapsed_seconds": 123.0,
+    "stopped_early": false
+  },
+  "n_crashes": 4,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 496, 'CRASH': 4}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 20 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_, dotted_key, quoted_key\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 110001, average 104806.5\n   This is the PRIMARY objective. The parser's known defect\n   class is unbounded recursion, reachable only past roughly\n   15,000 (arrays), 52,000 (inline tables) and 87,000\n   (dotted keys) levels.\n   OK - reaching crash territory. Do not reduce it.\n\n3. Acceptance rate: 0.0   TARGET: 0.3 to 0.7\n   SECONDARY to depth. Note acceptance is measured per\n   document: one malformed line rejects the whole file.\n   Raise it by making the SHALLOW statements valid, not by\n   removing deep ones.\n   TOO LOW - most documents rejected. Make the ordinary\n   key-value lines well-formed while keeping one deep value.\n\n4. Distinct rejection messages: 9\n   Most common rejections:\n     213x  reject: line 1: invalid key\n     159x  reject: line 1: missing =\n     50x  reject: line 2: invalid key\n     40x  reject: line 2: missing =\n     13x  reject: line 3: missing =\n\nCrashes found: 4\nUnique crash signatures (recursion cycles):\n  2x  parse_array\n  2x  parse_inline_table + parse_keyval\nSignatures already found are not new information -\ntarget grammar productions that have NOT yet crashed.",
+  "prompt_tokens": 2121,
+  "completion_tokens": 3449,
+  "refine_status": "rejected",
+  "refine_error": "TypeError: DottedKey.__init__() missing 1 required positional argument: 'value'"
+}

@@ -1,0 +1,53 @@
+{
+  "iteration": 1,
+  "elapsed_seconds": 6.4,
+  "summary": {
+    "total": 500,
+    "outcomes": {
+      "REJECTED": 416,
+      "ACCEPTED": 55,
+      "HARNESS_ERROR": 29
+    },
+    "acceptance_rate": 0.11,
+    "depth_max": 108246,
+    "depth_avg": 4554.1,
+    "productions_covered": 20,
+    "productions_total": 23,
+    "productions_missing": [
+      "bool_",
+      "dotted_key",
+      "quoted_key"
+    ],
+    "distinct_errors": 27,
+    "top_errors": [
+      [
+        "reject: line 1: invalid key",
+        171
+      ],
+      [
+        "reject: line 2: invalid key",
+        84
+      ],
+      [
+        "reject: line 1: missing =",
+        38
+      ],
+      [
+        "reject: line 2: missing =",
+        31
+      ],
+      [
+        "reject: line 5: invalid key",
+        15
+      ]
+    ],
+    "crash_signatures": {},
+    "elapsed_seconds": 6.3,
+    "stopped_early": false
+  },
+  "n_crashes": 0,
+  "feedback_sent": "RESULTS FROM YOUR LAST STRATEGY\n\nInputs tested: 500\nOutcomes: {'REJECTED': 416, 'ACCEPTED': 55, 'HARNESS_ERROR': 29}\n\nMEASURED AGAINST THE OBJECTIVE:\n\n1. Grammar production coverage: 20 of 23\n   NOT COVERED - these grammar productions never appeared,\n   so the parser code handling them was never reached:\n     bool_, dotted_key, quoted_key\n   Generate inputs that exercise them.\n\n2. Nesting depth: max 108246, average 4554.1\n   TARGET: the parser only crashes past roughly 15000-90000\n   levels, depending on the construct.\n   OK - reaching crash territory.\n\n3. Acceptance rate: 0.11   TARGET: 0.3 to 0.7\n   TOO LOW - most inputs are rejected at the front door,\n   so the parser's real logic is never reached.\n\n4. Distinct rejection messages: 27\n   Most common rejections:\n     171x  reject: line 1: invalid key\n     84x  reject: line 2: invalid key\n     38x  reject: line 1: missing =\n     31x  reject: line 2: missing =\n     15x  reject: line 5: invalid key\n\nCrashes found: 0",
+  "prompt_tokens": 2256,
+  "completion_tokens": 1850,
+  "refine_status": "accepted"
+}

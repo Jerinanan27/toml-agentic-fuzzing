@@ -60,12 +60,23 @@ def depth(node) -> int:
     Iterative, not recursive - deep structures would otherwise
     overflow Python's own stack (which is the same bug class we
     are hunting in the C parser).
+
+    Document/KeyValue/header nodes are walked through without adding
+    depth: a document containing one 3-deep array is 3 deep, not 5.
+    Statements are structure, not nesting.
     """
     max_d = 0
     stack = [(node, 0)]
     while stack:
         current, d = stack.pop()
-        if isinstance(current, DottedKey):
+        if isinstance(current, Document):
+            for stmt in current.statements:
+                stack.append((stmt, d))
+        elif isinstance(current, KeyValue):
+            stack.append((current.value, d))
+        elif isinstance(current, (TableHeader, ArrayTableHeader, Comment)):
+            max_d = max(max_d, d)
+        elif isinstance(current, DottedKey):
             max_d = max(max_d, d + current.depth)
             stack.append((current.value, d + current.depth))
         elif isinstance(current, dict):
@@ -79,7 +90,6 @@ def depth(node) -> int:
         else:
             max_d = max(max_d, d)
     return max_d
-
 
 def serialize(node) -> str:
     """Turn a structure into TOML text. Iterative, to survive deep nesting."""

@@ -47,27 +47,56 @@ def load_strategy(code: str):
 
 
 def validate_strategy(strategy, n=10) -> None:
-    """Check the strategy actually produces examples.
-    Raises if it does not."""
-    samples = [strategy.example() for _ in range(n)]
-    if len(samples) < n:
-        raise ValueError("strategy did not produce enough examples")
+    """Check the strategy produces examples that actually serialise.
 
+    Generating is not sufficient. A strategy can emit a node the
+    serialiser does not recognise - e.g. a tuple of statements where a
+    statement belongs - which .example() accepts happily and which only
+    fails later, part-way through a recorded run. Round-tripping to TOML
+    here converts that into a rejection at the gate, which is where the
+    loop can still respond to it.
+    """
+    import warnings
+    from hypothesis.errors import HypothesisDeprecationWarning
+    from metrics import to_toml
 
+    # Promote Hypothesis's deprecation warnings to errors. The one that
+    # matters is use of the `random` module inside a strategy: it bypasses
+    # Hypothesis's own entropy, so runs are not replayable and the shrinker
+    # cannot reduce the values it produced. A strategy that does this still
+    # runs and still finds crashes, so nothing else here would catch it.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", HypothesisDeprecationWarning)
+
+        for _ in range(n):
+            example = strategy.example()
+            text = to_toml(example)      # raises on unknown node types
+            if "\x00" in text:
+                raise ValueError(
+                    "strategy emitted a NUL byte; tomlc99 takes a "
+                    "NUL-terminated char* so such inputs cannot be tested"
+                )
+
+        
 def ask_for_improvement(task_prompt: str, current_code: str, feedback: str) -> dict:
     """Send the task, the current code and the feedback. Get new code back."""
     user_prompt = (
-        task_prompt
-        + "\n\n=== YOUR CURRENT STRATEGY ===\n"
+        "You are refining a Hypothesis strategy that generates TOML documents\n"
+        "to fuzz tomlc99. Node classes available: Document, KeyValue,\n"
+        "TableHeader, ArrayTableHeader, Comment, QuotedKey, DottedKey,\n"
+        "RawValue. Every element of Document.statements must be exactly one\n"
+        "of Comment, KeyValue, TableHeader, ArrayTableHeader. Never emit NUL\n"
+                "bytes. Keep st.recursive/@composite for recursive productions and\n"
+        "build deep nesting with a loop, not Python recursion. Use only\n"
+        "Hypothesis strategies for randomness - never the `random` module,\n"
+        "which breaks reproducibility and shrinking.\n"
+        "\n=== YOUR CURRENT STRATEGY ===\n"
         + current_code
-        + "\n\n=== "
-        + feedback
-        + "\n\nRewrite the strategy to fix the problems above. "
-        + "Return ONLY Python code, no explanation, no markdown fences. "
-        + "Define a variable named `strategy`."
-        + "Do NOT include reasoning or <think> blocks. "
-        + "Return ONLY Python code, no explanation, no markdown fences. "
-        + "Define a variable named `strategy`."
+        + "\n\n=== " + feedback
+        + "\n\nRewrite the strategy to fix the problems above, keeping the "
+          "grammar production coverage you already have. Return ONLY Python "
+          "code, no explanation, no markdown fences. Do NOT include <think> "
+          "blocks. Define a variable named `strategy`."
     )
 
     response = call_llm(

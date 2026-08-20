@@ -52,27 +52,30 @@ def load(path):
 
 
 if __name__ == "__main__":
-    print("Running control experiment (500 inputs each)...\n")
-
-    # 1. Random baseline
     from strategies.baseline import baseline
-    print("1/3 random baseline...")
+    from agent.refine import load_strategy
+
+    print("1/4 random baseline...")
     r_base = run_strategy(baseline, is_structured=False)
 
-    # 2. Seed strategy (iteration 0)
-    print("2/3 seed strategy...")
-    seed = load("strategies/generated/iteration_0.py")
+    print("2/4 grammar seed...")
+    seed = load_strategy(open("strategies/seed_grammar.py").read())
     r_seed = run_strategy(seed, is_structured=True)
 
-    # 3. Evolved strategy (iteration 5)
-    print("3/3 evolved strategy...")
-    evolved = load("strategies/generated/iteration_5.py")
-    r_evolved = run_strategy(evolved, is_structured=True)
+    print("3/4 exp3 final (flat objective)...")
+    e3 = load_strategy(open("strategies/generated_exp3/iteration_5.py").read())
+    r_e3 = run_strategy(e3, is_structured=True)
 
-    print("\n" + "=" * 60)
-    print(f"{'Approach':<22}{'Crashes':>10}{'Hangs':>8}{'Max depth':>12}")
-    print("=" * 60)
-    print(f"{'Random baseline':<22}{r_base['crashes']:>10}{r_base['hangs']:>8}{r_base['depth_max']:>12}")
-    print(f"{'Seed (iteration 0)':<22}{r_seed['crashes']:>10}{r_seed['hangs']:>8}{r_seed['depth_max']:>12}")
-    print(f"{'Evolved (iteration 5)':<22}{r_evolved['crashes']:>10}{r_evolved['hangs']:>8}{r_evolved['depth_max']:>12}")
-    print("=" * 60)
+    print("4/4 exp4 final (depth primary)...")
+    e4 = load_strategy(open("strategies/generated_exp4/iteration_5.py").read())
+    r_e4 = run_strategy(e4, is_structured=True)
+
+    print("\n" + "=" * 70)
+    print(f"{'Arm':<28}{'Crashes':>10}{'Hangs':>8}{'Max depth':>12}")
+    print("=" * 70)
+    for name, r in [("Random baseline", r_base),
+                    ("Grammar seed (iter 0)", r_seed),
+                    ("Exp3 final (flat)", r_e3),
+                    ("Exp4 final (depth primary)", r_e4)]:
+        print(f"{name:<28}{r['crashes']:>10}{r['hangs']:>8}{r['depth_max']:>12}")
+    print("=" * 70)

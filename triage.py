@@ -3,7 +3,7 @@ import os
 import re
 from collections import Counter
 
-CRASH_DIRS = ["crashes", "crashes_exp2"]
+CRASH_DIRS = ["crashes", "crashes_exp2", "crashes_exp4"]
 FRAME_RE = re.compile(r"in (\w+) /work/tomlc99/toml\.c")
 
 

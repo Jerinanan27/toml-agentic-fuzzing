@@ -25,6 +25,16 @@ dict (inline table), or RawValue.
 
 Define a module-level variable named `strategy`.
 
+Exact constructor signatures - call them exactly as written:
+  Document(statements)              statements: list
+  KeyValue(key, value)
+  TableHeader(path)                 path: list of str
+  ArrayTableHeader(path)            path: list of str
+  Comment(text)                     text: str
+  QuotedKey(text, literal=False)
+  DottedKey(depth, value)           depth: int, value: the assigned value
+  RawValue(text, production)        both str
+
 === THE GRAMMAR (ANTLR grammars-v4, TomlParser.g4) ===
 
 document   : expression (NL expression)* EOF
@@ -115,9 +125,11 @@ header while `[` after `=` starts an array. Position decides meaning.
 Maximise grammar production coverage and nesting depth, while keeping
 the parser's acceptance rate between 0.3 and 0.7.
 
-Acceptance near 1.0 means no malformed inputs, so error-handling code is
-never tested. Acceptance near 0.0 means inputs are rejected at the front
-door and the parser's real logic is never reached. Both are failures.
+Acceptance near 1.0 means no malformed inputs, so error-handling code
+is never tested. Acceptance near 0.0 is ambiguous: it may mean inputs
+are rejected at the first byte without reaching the parser's logic, or
+that deeply-nested inputs are being fully parsed and then correctly
+rejected. Prefer the second. Depth and crash count distinguish them.
 
 Generating deep structures is cheap only if built iteratively — build
 100,000-level nesting with a loop, not with recursive Python calls

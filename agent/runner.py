@@ -3,7 +3,7 @@ import os
 import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from metrics import depth, node_types, to_toml, production_coverage
+from metrics import depth, node_types, to_toml, ALL_PRODUCTIONS
 from oracle import run_once, classify
 from triage import fingerprint
 
@@ -25,7 +25,7 @@ def run_round(strategy, n_examples=500, wall_clock_cap=WALL_CLOCK_CAP_SECONDS):
 
     outcomes = {}
     depths = []
-    structures = []
+    seen_productions = set()   # accumulate coverage, not the structures
     error_messages = {}
     crashes = []
 
@@ -33,13 +33,18 @@ def run_round(strategy, n_examples=500, wall_clock_cap=WALL_CLOCK_CAP_SECONDS):
         if time.time() - started > wall_clock_cap:
             stopped_early = True
             break
-        structure = strategy.example()
-        structures.append(structure)
 
+        structure = strategy.example()
+
+        # Measure immediately, then drop the structure. Retaining 500 deep
+        # structures at once exhausts memory and gets the process OOM-killed;
+        # a set union gives identical coverage for constant memory.
         d = depth(structure)
         depths.append(d)
+        seen_productions |= node_types(structure)
 
         text = to_toml(structure)
+        del structure
         payload = text.encode("utf-8", errors="replace")
 
         result = run_once(payload)
@@ -75,7 +80,12 @@ def run_round(strategy, n_examples=500, wall_clock_cap=WALL_CLOCK_CAP_SECONDS):
         key = " + ".join(c["signature"])
         signatures[key] = signatures.get(key, 0) + 1
 
-    coverage = production_coverage(structures)
+    covered = seen_productions & ALL_PRODUCTIONS
+    coverage = {
+        "covered": len(covered),
+        "total": len(ALL_PRODUCTIONS),
+        "missing": sorted(ALL_PRODUCTIONS - covered),
+    }
 
     total = sum(outcomes.values())
     accepted = outcomes.get("ACCEPTED", 0)
@@ -126,34 +136,37 @@ def format_feedback(summary: dict) -> str:
         lines.append("   OK - full grammar coverage. Keep it there.")
     lines.append("")
 
-    # 2. Nesting depth
+        # 2. Nesting depth - the PRIMARY objective
     lines.append(f"2. Nesting depth: max {summary['depth_max']}, "
                  f"average {summary['depth_avg']}")
-    lines.append("   TARGET: the parser only crashes past roughly 15000-90000")
-    lines.append("   levels, depending on the construct.")
+    lines.append("   This is the PRIMARY objective. The parser's known defect")
+    lines.append("   class is unbounded recursion, reachable only past roughly")
+    lines.append("   15,000 (arrays), 52,000 (inline tables) and 87,000")
+    lines.append("   (dotted keys) levels.")
     if summary["depth_max"] < 100000:
-        lines.append(f"   TOO SHALLOW - max depth {summary['depth_max']}.")
-        lines.append("   Some inputs must reach 100000+ levels of nesting.")
+        lines.append(f"   TOO SHALLOW - max {summary['depth_max']}. Some inputs")
+        lines.append("   must exceed 100,000 levels. Do NOT reduce depth to")
+        lines.append("   improve acceptance rate; depth takes priority.")
     else:
-        lines.append("   OK - reaching crash territory.")
+        lines.append("   OK - reaching crash territory. Do not reduce it.")
     lines.append("")
 
-    # 3. Acceptance rate
+    # 3. Acceptance rate - SECONDARY, and only via shallow statements
     rate = summary["acceptance_rate"]
     lines.append(f"3. Acceptance rate: {rate}   TARGET: 0.3 to 0.7")
+    lines.append("   SECONDARY to depth. Note acceptance is measured per")
+    lines.append("   document: one malformed line rejects the whole file.")
+    lines.append("   Raise it by making the SHALLOW statements valid, not by")
+    lines.append("   removing deep ones.")
     if rate > 0.7:
-        lines.append("   TOO HIGH - nearly every input is valid TOML, so the")
-        lines.append("   parser's error-handling code is never tested. Generate")
-        lines.append("   near-valid-but-malformed inputs: unterminated strings,")
-        lines.append("   duplicate keys, a table header missing a bracket, a")
-        lines.append("   datetime with an impossible month, a trailing '='.")
+        lines.append("   TOO HIGH - add near-valid-but-malformed inputs:")
+        lines.append("   unterminated strings, duplicate keys, trailing '='.")
     elif rate < 0.3:
-        lines.append("   TOO LOW - most inputs are rejected at the front door,")
-        lines.append("   so the parser's real logic is never reached.")
+        lines.append("   TOO LOW - most documents rejected. Make the ordinary")
+        lines.append("   key-value lines well-formed while keeping one deep value.")
     else:
         lines.append("   OK - in the target band.")
     lines.append("")
-
     # 4. Rejection diversity
     lines.append(f"4. Distinct rejection messages: {summary['distinct_errors']}")
     if summary["top_errors"]:
