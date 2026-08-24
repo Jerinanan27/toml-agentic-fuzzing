@@ -6,12 +6,12 @@ Five experiments against tomlc99 at commit `29076df`, each a 5-iteration
 agentic loop of 500 inputs per iteration. All crashes found are
 unbounded-recursion stack overflows. No other defect class appeared.
 
-| Exp | Generator vocabulary | Objective | Model | Crashes |
-|-----|----------------------|-----------|-------|---------|
-| 1   | 9 of 23 productions  | flat | GPT-OSS-120B | 271 |
-| 2   | 9 of 23 productions  | flat | GPT-OSS-120B | 278 |
-| 3   | 22 of 23 productions | flat | GPT-OSS-120B | 10 |
-| 4   | 22 of 23 productions | depth primary | GPT-OSS-120B | 142 |
+| Exp | Generator vocabulary | Objective     | Model        | Crashes |
+|-----|----------------------|---------------|--------------|---------|
+| 1   | 9 of 23 productions  | flat          | GPT-OSS-120B | 271     |
+| 2   | 9 of 23 productions  | flat          | GPT-OSS-120B | 278     |
+| 3   | 22 of 23 productions | flat          | GPT-OSS-120B | 10      |
+| 4   | 22 of 23 productions | depth primary | GPT-OSS-120B | 142     |
 | 5   | 22 of 23 productions | depth primary | Qwen 3.6 27B | 18 (loop never evolved - see below) |
 
 Experiments 3 and 4 are a controlled pair: one variable changed, the
@@ -26,13 +26,13 @@ trace. Functions appearing once or twice are the exhaustion point
 Keeping only frequently-repeating frames isolates the recursion cycle,
 which is the actual defect.
 
-| Recursion cycle                                 | Defect class                     | Crash threshold |
-|-------------------------------------------------|----------------------------------|-----------------|
-| parse_array                                     | Deep arrays `[[[...]]]`          | ~14,850 |
-| parse_keyval                                    | Deep dotted keys `a.a.a...`      | ~87,270 |
-| parse_inline_table + parse_keyval               | Deep inline tables `{ k = {...} }` | ~52,360 |
-| parse_array + parse_keyval                      | Mixed array/dotted               | variant |
-| parse_array + parse_inline_table + parse_keyval | Fully mixed nesting              | variant |
+| Recursion cycle                                 | Defect class                       | Crash threshold |
+|-------------------------------------------------|------------------------------------|-----------------|
+| parse_array                                     | Deep arrays `[[[...]]]`            | ~14,850         |
+| parse_keyval                                    | Deep dotted keys `a.a.a...`        | ~87,270         |
+| parse_inline_table + parse_keyval               | Deep inline tables `{ k = {...} }` | ~52,360         |
+| parse_array + parse_keyval                      | Mixed array/dotted                 | variant         |
+| parse_array + parse_inline_table + parse_keyval | Fully mixed nesting                | variant         |
 
 Five distinct cycles across all experiments.
 
@@ -40,11 +40,11 @@ Five distinct cycles across all experiments.
 
 Three measurements exist and they answer different questions.
 
-| Method | Arrays | What it measures |
-|---|---|---|
-| Binary search (`minimize.py`) | ~14,850 | smallest depth that still crashes, converged |
-| Hypothesis shrinker (`triage/shrink.py`) | 15,746 | smallest the shrinker reached in 60 examples |
-| Triage minimum (`triage.py`) | 15,160 | shallowest crash the generator happened to emit |
+| Method                                   | Arrays | What it measures                                |
+|------------------------------------------|--------|-------------------------------------------------|
+| Binary search (`minimize.py`)            | ~14,850| smallest depth that still crashes, converged    |
+| Hypothesis shrinker (`triage/shrink.py`) | 15,746 | smallest the shrinker reached in 60 examples    |
+| Triage minimum (`triage.py`)             | 15,160 | shallowest crash the generator happened to emit |
 
 **The binary search is authoritative.** It is the only method that tests
 both sides of the boundary: it confirms depth N crashes and depth N-1
@@ -74,12 +74,18 @@ recursion consumes a different stack-frame size per level.
 ## Minimized reproducers
 
 ```
-array:        python3 -c "print('a = ' + '['*14851 + '1' + ']'*14851)"
-dotted:       python3 -c "print('a' + '.a'*87258 + ' = 1')"
-inline table: python3 -c "print('a = ' + '{ k = '*52000 + '1' + ' }'*52000)"
+python3 -c "print('a = '+'['*20000+'1'+']'*20000)"
+python3 -c "print('a'+'.a'*100000+' = 1')"
+python3 -c "print('a = '+'{ k = '*60000+'1'+' }'*60000)"
 ```
 
 Each verified by re-running standalone against the pinned build.
+
+Reproducers are written above the measured thresholds deliberately.
+A command written at the boundary fails on some runs, since the exact
+point of exhaustion varies by 6 to 25 levels with runtime memory state.
+Verified on a fresh clone (2025-08-24): 20,000 / 100,000 / 60,000 all
+crash; 14,851 / 87,258 / 52,000 do not.
 
 ## Resolving the unsymbolicated crashes
 
@@ -147,10 +153,10 @@ Experiment 3's feedback presented four measurements as equally weighted complain
 Both "depth TOO SHALLOW" and "acceptance TOO LOW" fired every round with
 no statement of which mattered more.
 
-| Iteration | 0 | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|---|
+| Iteration | 0       | 1       | 2          | 3      | 4      | 5      |
+|-----------|---------|---------|------------|--------|--------|--------|
 | Depth max | 110,001 | 108,246 | **20,001** | 20,000 | 20,001 | 19,970 |
-| Crashes | 2 | 0 | 1 | 4 | 1 | 2 |
+| Crashes   | 2       | 0       | 1          | 4      | 1      | 2      |
 
 The model resolved the ambiguity by satisfying the objective it could
 move cheaply. Acceptance climbed 0.000 to 0.176 while depth collapsed by

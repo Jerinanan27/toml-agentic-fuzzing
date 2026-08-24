@@ -39,6 +39,19 @@ rather than inferred.
 
 The LLM sees only the proxy signal. It never sees the target's source.
 
+## Verify
+
+```bash
+docker build -t fuzz:pinned .
+docker run --rm -it -v "$PWD":/work --ulimit stack=8388608:8388608 fuzz:pinned
+# inside the container:
+./build.sh && ./reproduce.sh
+```
+
+`build.sh` fetches tomlc99 at the pinned commit and refuses to build against
+any other. `reproduce.sh` exits non-zero if any of the three defect classes
+stops reproducing.
+
 ## Results
 
 **Grammar-derived generation beats random** (control experiment,
@@ -132,3 +145,4 @@ are not comparable.
 - Base: `ubuntu:24.04`, clang-18, 8 MB stack
 - LLM: `openai/gpt-oss-120b` via Groq (open-weight, not frontier)
 - Total LLM cost across all experiments: under $0.05, ~1% of the $5 budget
+
