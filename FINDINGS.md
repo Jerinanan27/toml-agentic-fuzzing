@@ -320,23 +320,32 @@ was added for experiment 5.
 ## Differential test against tomlc17 (the maintained successor)
 
 tomlc99 is obsolete; its README points to tomlc17. A second harness
-(`harness/harness17.c`) was built for tomlc17's changed API - which takes
-an explicit length, fixing the embedded-NUL limitation of tomlc99 - and
-all three reproducers were run against it.
+(`harness/harness17.c`) was built for tomlc17's changed API, which takes an
+explicit length, and all three reproducers were replayed.
 
-The recursion/stack-overflow is **fixed**. But the same deeply-nested
-inputs trigger a different, newly-introduced defect:
+**The recursion overflow is fixed.** No input class produced a crash, a
+stack overflow, or a sanitizer abort attributable to nesting depth.
 
-- Fault: null-pointer dereference at `tomlc17.c:110`
-- Root cause: `page_create()` (`tomlc17.c:105`) returns NULL when the
-  requested size exceeds its 1 GB cap, and the caller dereferences the
-  result without a null check
-- Impact: denial of service on the current, maintained version
-- All three input classes (array, dotted, inline table) trigger it
+UBSan does report undefined behaviour at `tomlc17.c:110`:
 
-This turns a rediscovery into a novel finding: the fix for the old
-recursion bug introduced a distinct defect reachable by the same input
-class.
+    runtime error: member access within null pointer of type 'page_t'
+
+This is **not** a defect reachable by input. Line 110 is inside
+`page_create()` and computes a struct size with a hand-rolled `offsetof`:
+
+    size_t totalsz = (size_t) & ((page_t *)0)->data[size];
+
+Forming a member access through a null pointer is undefined by the C
+standard, though it behaves as intended on every mainstream compiler. The
+line executes on every call to `page_create()`, so the report fires on
+`a = 1` exactly as it does on a 20,000-level nested array. Verified against
+commit 64a063b (22 Aug 2026): identical output and exit status for both.
+
+An earlier draft of this document described the report as a null-pointer
+dereference from an unchecked `page_create()` return, reachable by deep
+input. Reading the source at the cited line disproved that. It is recorded
+here because the correction matters: a sanitizer message names a location,
+not a cause, and the two are easy to conflate.
 
 ## Cross-model comparison: inconclusive
 

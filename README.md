@@ -81,9 +81,10 @@ ASan: arrays ~14,850, inline tables ~52,360, dotted keys ~87,270.
 
 **Differential test against the maintained successor
 ([tomlc17](https://github.com/cktan/tomlc17)):** the recursion overflow is
-fixed, but the same deeply-nested inputs trigger a *different, newly
-introduced* defect — a null-pointer dereference at `tomlc17.c:110` from
-an unchecked `page_create()` return.
+fixed, and the reproducers find no memory-safety defect. UBSan reports
+undefined behaviour at `tomlc17.c:110`, but that line is a hand-rolled
+`offsetof` inside `page_create()` and fires on `a = 1` as readily as on a
+20,000-level array, so it is not reachable by input.
 
 Full details, including negative results, in [`FINDINGS.md`](FINDINGS.md).
 
