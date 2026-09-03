@@ -75,6 +75,19 @@ tested" rather than "the parser did something":
    deepest reproducer is about 175 KB - so it cannot suppress a finding.
 3. The harness itself ran out of memory.
 
+## Budget enforcement
+
+| Constraint | Where enforced |
+|---|---|
+| 500 examples per iteration | `run_round(n_examples=500)` |
+| 5-second per-input timeout | `oracle.py`, `TIMEOUT_SECONDS` |
+| 10-minute wall-clock cap per run | `agent/runner.py`, `WALL_CLOCK_CAP_SECONDS` |
+| 8 MB input size guard | `oracle.py`, `MAX_INPUT_BYTES` |
+| 5 iterations per experiment | `agent/loop.py`, `MAX_ITERATIONS` |
+
+A truncated run reports `stopped_early: True` in its round log, so a run cut
+short by the cap is never mistaken for a complete one.
+
 ## Outcome taxonomy
 
 `oracle.py` classifies each run into one of five outcomes. The **order**
