@@ -52,6 +52,15 @@ docker run --rm -it -v "$PWD":/work --ulimit stack=8388608:8388608 fuzz:pinned
 any other. `reproduce.sh` exits non-zero if any of the three defect classes
 stops reproducing.
 
+Harness behaviour on sample inputs (spec Step 2) — valid, malformed,
+deeply nested, empty, and binary-with-NUL:
+
+```bash
+python3 oracle.py
+```
+
+Recorded output: [`docs/harness_demo.txt`](docs/harness_demo.txt)
+
 ## Results
 
 **Grammar-derived generation beats random** (control experiment,
